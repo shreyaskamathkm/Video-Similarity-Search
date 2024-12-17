@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "video-similarity-search"
+version = "0.0.1"
+description = "The Video Search Tool is a Python-based application designed to efficiently manage and query video embeddings stored in a vector database, such as Milvus."
+authors = ["Shreyas Kamath <shreyaskamathkm@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^1.26.4"
+opencv-python = "^4.9.0.80"
+pymilvus = "^2.5.0"
+transformers= "^4.47.0"
+torch = [
+    {version = "^2.5.1", source="pypi", markers = "sys_platform == 'darwin'"},
+    {version = "^2.5.1", source = "torchgpu", markers = "sys_platform == 'linux'"}
+]
+torchvision = [
+    {version = "^0.20", source="pypi", markers = "sys_platform == 'darwin'"},
+    {version = "^0.20", source = "torchgpu", markers = "sys_platform == 'linux'"}
+]
+
+
+[[tool.poetry.source]]
+name = "torchcpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "torchgpu"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
+ruff = "^0.8.3"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
