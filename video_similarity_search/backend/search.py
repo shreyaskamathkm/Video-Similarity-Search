@@ -1,12 +1,16 @@
+import logging
+
 import numpy as np
 from PIL import Image
 
 from video_similarity_search.backend.database_handler import Database
-from video_similarity_search.backend.model import Model
+from video_similarity_search.backend.model import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class Search:
-    def __init__(self, model: Model, database: Database):
+    def __init__(self, model: BaseModel, database: Database):
         self.model = model
         self.database = database
 

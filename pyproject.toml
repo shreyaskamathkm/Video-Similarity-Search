@@ -11,6 +11,7 @@ numpy = "^1.26.4"
 opencv-python = "^4.9.0.80"
 pymilvus = "^2.5.0"
 transformers= "^4.47.0"
+rich ="13.9.4"
 torch = [
     {version = "^2.5.1", source="pypi", markers = "sys_platform == 'darwin'"},
     {version = "^2.5.1", source = "torchgpu", markers = "sys_platform == 'linux'"}

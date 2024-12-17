@@ -79,3 +79,4 @@ target/
 *.insyncdl
 .venv
 volumes/
+segments/

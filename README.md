@@ -90,7 +90,7 @@ Perform a search using a text query:
 ```python
 query = "A person stealing a bag"
 results = video_search.search_by_text(query)
-print("Search results:", results)
+logger.info("Search results:", results)
 ```
 
 ### Image-based Search
@@ -101,7 +101,7 @@ Perform a search using an image query:
 from PIL import Image
 image = Image.open("query_image.jpg")
 results = video_search.search_by_image(image)
-print("Search results:", results)
+logger.info("Search results:", results)
 ```
 
 ### Managing the Database

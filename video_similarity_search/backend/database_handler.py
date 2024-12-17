@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -10,15 +11,23 @@ from pymilvus import (
 )
 
 from video_similarity_search.backend.embeddingextractor import EmbeddingExtractor
+from video_similarity_search.backend.schema import FrameEmbeddings
+
+logger = logging.getLogger(__name__)
 
 VIDEO_SUFFIXES = ["mp4", "mov"]
 
 
 class Database:
-    def __init__(self, remove_old_data: bool):
+    def __init__(self, collection_name: str, remove_old_data: bool):
         self.remove_old_data = remove_old_data
+        self.collection_name = collection_name
 
-    def insert_embeddings(self, path: str, embeddings: np.ndarray, frame_indices: list[int]):
+    def insert_video_embeddings(
+        self,
+        path: str,
+        embeddings: FrameEmbeddings,
+    ):
         raise NotImplementedError("This should be implemented in the subclass")
 
     def search(self, query_embedding, top_k):
@@ -32,26 +41,25 @@ class Database:
 
 
 class MilvusDatabase(Database):
-    def __init__(self, remove_old_data: bool = True):
-        super().__init__(remove_old_data)
+    def __init__(self, collection_name: str = "embeddings", remove_old_data: bool = True):
+        super().__init__(collection_name, remove_old_data)
 
         self.search_params = {"nprobe": 128}
         try:
             # Initialize the client directly
             self.client = MilvusClient(uri="http://localhost:19530", token="root:Milvus")
-            print("Connected to Milvus.")
+            logger.info("Connected to Milvus.")
         except Exception as e:
-            print(f"Error connecting to Milvus: {e}")
+            logger.info(f"Error connecting to Milvus: {e}")
             raise
 
-        self.collection_name = "video_embeddings"
         self._create_or_get_collection()
 
         # Create index if it doesn't exist
         self._create_index()
         # Load collection after initialization
         self.client.load_collection(self.collection_name)
-        print(f"Collection '{self.collection_name}' loaded into memory.")
+        logger.info(f"Collection '{self.collection_name}' loaded into memory.")
 
     def _create_or_get_collection(self):
         if self.client.has_collection(self.collection_name) and self.remove_old_data:
@@ -69,7 +77,7 @@ class MilvusDatabase(Database):
                     name="id", dtype=DataType.INT64, is_primary=True, auto_id=True
                 ),  # Auto-generated unique ID
                 FieldSchema(
-                    name="video_name",
+                    name="path",
                     dtype=DataType.VARCHAR,
                     max_length=255,
                     is_primary=False,
@@ -83,11 +91,11 @@ class MilvusDatabase(Database):
                     is_primary=False,
                 ),
             ]
-            schema = CollectionSchema(fields=fields, description="Video frame embeddings")
+            schema = CollectionSchema(fields=fields, description="Embedding Space")
 
             # Create the collection
             self.client.create_collection(collection_name=self.collection_name, schema=schema)
-            print(f"Collection '{self.collection_name}' created.")
+            logger.info(f"Collection '{self.collection_name}' created.")
 
     def _create_index(self):
         # Create index for the 'embedding' field
@@ -102,36 +110,36 @@ class MilvusDatabase(Database):
         )
 
         self.client.create_index(collection_name=self.collection_name, index_params=index_params)
-        print(f"Index created for '{self.collection_name}'.")
+        logger.info(f"Index created for '{self.collection_name}'.")
 
-    def insert_embeddings(self, video_path: str, embeddings: np.ndarray, frame_indices: list[int]):
-        if not isinstance(embeddings, np.ndarray):
+    def insert_video_embeddings(self, path: str, embeddings: list[FrameEmbeddings]):
+        if not isinstance(embeddings.embeddings, np.ndarray):
             raise ValueError("Embeddings should be a numpy ndarray")
-        if embeddings.shape[1] != 512:
+        if embeddings.embeddings.shape[1] != 512:
             raise ValueError(
                 f"Embeddings should have 512 dimensions, but got {embeddings.shape[1]}"
             )
-        if not isinstance(video_path, str):
-            video_path = str(video_path)
-        if not all(isinstance(idx, int) for idx in frame_indices):
+        if not isinstance(path, str):
+            path = str(path)
+        if not all(isinstance(idx, int) for idx in embeddings.frame_indices):
             raise ValueError("frame_indices should be a list of integers")
 
         # Prepare data for insertion
         data = [
             {
-                "video_name": video_path,
+                "path": path,
                 "frame_idx": frame_idx,
                 "embedding": embedding.tolist(),
             }
-            for frame_idx, embedding in zip(frame_indices, embeddings)
+            for frame_idx, embedding in zip(embeddings.frame_indices, embeddings.embeddings)
         ]
 
         try:
             # collection = Collection(name=self.collection_name)
             self.client.insert(collection_name=self.collection_name, data=data)
-            print(f"Inserted {len(data)} records into '{self.collection_name}'.")
+            logger.info(f"Inserted {len(data)} records into '{self.collection_name}'.")
         except Exception as e:
-            print(f"Error saving embeddings: {e}")
+            logger.info(f"Error saving embeddings: {e}")
             raise
 
     def search(self, query_embedding, top_k=5):
@@ -143,7 +151,7 @@ class MilvusDatabase(Database):
         try:
             # Ensure the collection is loaded
             self.client.load_collection(self.collection_name)
-            print(f"Collection '{self.collection_name}' loaded into memory.")
+            logger.info(f"Collection '{self.collection_name}' loaded into memory.")
 
             # Perform the search
             return self.client.search(
@@ -152,23 +160,23 @@ class MilvusDatabase(Database):
                 anns_field="embedding",
                 search_params=self.search_params,
                 limit=top_k,
-                output_fields=["video_name", "frame_idx"],
+                output_fields=["path", "frame_idx"],
             )
         except Exception as e:
-            print(f"Error during search: {e}")
+            logger.info(f"Error during search: {e}")
             raise
 
     def query(self, expr: str):
         result = self.client.query(collection_name=self.collection_name, filter=expr)
-        print(result)
+        logger.info(result)
 
     def delete_file(self, video_name: str):
         try:
             collection = Collection(name=self.collection_name)
-            collection.delete(expr=f"video_name == '{video_name}'")
-            print(f"Deleted video '{video_name}' from '{self.collection_name}'.")
+            collection.delete(expr=f"path == '{video_name}'")
+            logger.info(f"Deleted video '{video_name}' from '{self.collection_name}'.")
         except Exception as e:
-            print(f"Error deleting video: {e}")
+            logger.info(f"Error deleting video: {e}")
             raise
 
 
@@ -186,10 +194,10 @@ class VideoToDatabase(ModalityToDatabase):
         super().__init__(embeddings_extractor, database)
 
     def _add_video_to_database(self, path: Path):
-        embeddings, frame_indices = self.embeddings_extractor.extract_embeddings(path)
+        frame_embeddings = self.embeddings_extractor.extract_embeddings(path)
 
-        self.database.insert_embeddings(path, embeddings, frame_indices)
-        print(f"Video {path.name} added to the database.")
+        self.database.insert_video_embeddings(path, frame_embeddings)
+        logger.info(f"Video {path.name} added to the database.")
 
     def add_files_from_folder(self, folder_path: str):
         paths = [path for i in VIDEO_SUFFIXES for path in folder_path.glob("*." + i)]

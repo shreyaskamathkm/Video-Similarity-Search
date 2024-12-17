@@ -1,6 +1,10 @@
+import logging
+
 import numpy as np
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
+
+logger = logging.getLogger(__name__)
 
 
 class BaseModel:
@@ -21,6 +25,7 @@ class CLIPModelProcessor(BaseModel):
         """Initializes the CLIP model and processor."""
         self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        logger.info("Initializing CLIP Model")
 
     def extract_text_features(self, text: str) -> np.ndarray:
         """Extracts text embeddings using the CLIP model.
@@ -31,6 +36,7 @@ class CLIPModelProcessor(BaseModel):
         Returns:
             np.ndarray: Text feature vector.
         """
+        logger.debug("Extracting Text Features")
         inputs = self.processor(text=text, return_tensors="pt", padding=True)
         return self.model.get_text_features(**inputs).detach().numpy()
 
@@ -43,5 +49,7 @@ class CLIPModelProcessor(BaseModel):
         Returns:
             np.ndarray: Image feature vector.
         """
+        logger.debug("Extracting Image Features")
+
         inputs = self.processor(images=image, return_tensors="pt", padding=True)
         return self.model.get_image_features(**inputs).detach().numpy()
