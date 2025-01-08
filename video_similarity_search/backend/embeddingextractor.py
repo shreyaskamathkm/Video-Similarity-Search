@@ -1,5 +1,7 @@
 import logging
 import os
+from abc import ABC, abstractmethod
+from typing import Any
 
 import cv2
 import numpy as np
@@ -11,11 +13,12 @@ from video_similarity_search.backend.schema import FrameEmbeddings
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingExtractor:
+class EmbeddingExtractor(ABC):
     def __init__(self, model: BaseModel):
         self.model = model
 
-    def extract_embeddings(self, path: str):  # type: ignore
+    @abstractmethod
+    def extract_embeddings(self, *args: Any):  # type: ignore
         raise NotImplementedError("This should be implemented in the subclass")
 
 
@@ -77,7 +80,7 @@ class VideoEmbeddingExtractor(EmbeddingExtractor):
         self, results: list[tuple[str, int, float]], time_threshold: int
     ) -> dict[str, list[int]]:
         """Groups frame indices by proximity within the same video."""
-        grouped = {}
+        grouped: dict[str, list[int]] = {}
         for video_path, frame_idx, _ in results:
             if video_path not in grouped:
                 grouped[video_path] = []
@@ -130,7 +133,7 @@ class VideoEmbeddingExtractor(EmbeddingExtractor):
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         end_frame = min(end_frame, total_frames - 1)
 
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # type:ignore
         frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))

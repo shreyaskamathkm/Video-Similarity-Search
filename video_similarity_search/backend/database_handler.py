@@ -1,5 +1,7 @@
 import logging
+from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from pymilvus import (
@@ -18,25 +20,25 @@ logger = logging.getLogger(__name__)
 VIDEO_SUFFIXES = ["mp4", "mov"]
 
 
-class Database:
+class Database(ABC):
     def __init__(self, collection_name: str, remove_old_data: bool):
         self.remove_old_data = remove_old_data
         self.collection_name = collection_name
 
-    def insert_video_embeddings(
-        self,
-        path: str,
-        embeddings: FrameEmbeddings,
-    ):
+    @abstractmethod
+    def insert_video_embeddings(self, *args: Any, **kwargs: Any):
         raise NotImplementedError("This should be implemented in the subclass")
 
-    def search(self, query_embedding, top_k):
+    @abstractmethod
+    def search(self, *args: Any, **kwargs: Any):
         raise NotImplementedError("This should be implemented in the subclass")
 
-    def query(self, expr: str):
+    @abstractmethod
+    def query(self, *args: Any, **kwargs: Any):
         raise NotImplementedError("This should be implemented in the subclass")
 
-    def delete_file(self, name: str):
+    @abstractmethod
+    def delete_file(self, *args: Any, **kwargs: Any):
         raise NotImplementedError("This should be implemented in the subclass")
 
 
@@ -112,12 +114,12 @@ class MilvusDatabase(Database):
         self.client.create_index(collection_name=self.collection_name, index_params=index_params)
         logger.info(f"Index created for '{self.collection_name}'.")
 
-    def insert_video_embeddings(self, path: str, embeddings: list[FrameEmbeddings]):
+    def insert_video_embeddings(self, path: str, embeddings: FrameEmbeddings):
         if not isinstance(embeddings.embeddings, np.ndarray):
             raise ValueError("Embeddings should be a numpy ndarray")
         if embeddings.embeddings.shape[1] != 512:
             raise ValueError(
-                f"Embeddings should have 512 dimensions, but got {embeddings.shape[1]}"
+                f"Embeddings should have 512 dimensions, but got {embeddings.embeddings.shape[1]}"
             )
         if not isinstance(path, str):
             path = str(path)
@@ -180,12 +182,13 @@ class MilvusDatabase(Database):
             raise
 
 
-class ModalityToDatabase:
+class ModalityToDatabase(ABC):
     def __init__(self, embeddings_extractor: EmbeddingExtractor, database: Database):
         self.embeddings_extractor = embeddings_extractor
         self.database = database
 
-    def add_files_from_folder(self, folder_path: str):
+    @abstractmethod
+    def add_files_from_folder(self, *args, **kwargs):
         raise NotImplementedError("This should be implemented in the subclass")
 
 
@@ -199,7 +202,7 @@ class VideoToDatabase(ModalityToDatabase):
         self.database.insert_video_embeddings(path, frame_embeddings)
         logger.info(f"Video {path.name} added to the database.")
 
-    def add_files_from_folder(self, folder_path: str):
+    def add_files_from_folder(self, folder_path: Path):
         paths = [path for i in VIDEO_SUFFIXES for path in folder_path.glob("*." + i)]
         for video_path in [paths[0]]:
             self._add_video_to_database(video_path.resolve())
