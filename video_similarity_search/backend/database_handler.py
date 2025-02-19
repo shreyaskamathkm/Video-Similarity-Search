@@ -68,9 +68,12 @@ class MilvusDatabase(Database):
             self.client.drop_collection(self.collection_name)
 
         if self.client.has_collection(self.collection_name):
-            raise RuntimeError(
-                f"Collection {self.collection_name} already exists. Set remove_old_data=True to create a new one instead."
-            )
+            logger.warning(f"Collection '{self.collection_name}' already exists.")
+            self.client.load_collection(self.collection_name)
+            return
+            # raise RuntimeError(
+            #     f"Collection {self.collection_name} already exists. Set remove_old_data=True to create a new one instead."
+            # )
         # Check if the collection exists without 'using'
         if not self.client.has_collection(self.collection_name):
             # Define schema for the collection
@@ -170,7 +173,23 @@ class MilvusDatabase(Database):
 
     def query(self, expr: str):
         result = self.client.query(collection_name=self.collection_name, filter=expr)
-        logger.info(result)
+        logger.debug(result)
+        return result
+
+    def video_exists(self, path: Path) -> bool:
+        # Implement the logic to check if the video exists in the database
+        # This is just a placeholder implementation
+        # query =
+        # results = self.client.search(
+        #     collection_name=self.collection_name,
+        #     data=[str(path)],
+        #     anns_field="path",
+        #     # param={"metric_type": "COSINE", "params": {"nprobe": 10}},
+        #     limit=1,
+        #     filter=query,
+        # )
+        results = self.query(f'path == "{str(path)}"')
+        return len(results) > 0
 
     def delete_file(self, video_name: str):
         try:
@@ -197,6 +216,10 @@ class VideoToDatabase(ModalityToDatabase):
         super().__init__(embeddings_extractor, database)
 
     def _add_video_to_database(self, path: Path):
+        # Check if the video is already in the database
+        if self.database.video_exists(path):
+            logger.info(f"Video {path.name} already exists in the database.")
+            return
         frame_embeddings = self.embeddings_extractor.extract_embeddings(path)
 
         self.database.insert_video_embeddings(path, frame_embeddings)
