@@ -1,51 +1,37 @@
+import logging
+
+import numpy as np
 from PIL import Image
 
-from video_similarity_search.backend.database_handler import MilvusHandler
-from video_similarity_search.backend.model import Model
+from video_similarity_search.backend.database_handler import Database
+from video_similarity_search.backend.model import BaseModel
 
-# Class for Search operations
+logger = logging.getLogger(__name__)
 
 
-class VideoSearch:
-    def __init__(self, model: Model, milvus_handler: MilvusHandler):
+class Search:
+    def __init__(self, model: BaseModel, database: Database):
         self.model = model
-        self.milvus_handler = milvus_handler
+        self.database = database
 
-    def search_by_text(self, query: str, top_k: int = 5):
-        query_embedding = self.model.extract_text_features(query).flatten()
-
-        results = self.milvus_handler.search(query_embedding=query_embedding, top_k=top_k)
+    def _search(self, query_embedding: np.ndarray, top_k: int = 5):
+        results = self.database.search(query_embedding=query_embedding, top_k=top_k)
 
         matches = []
         for hit in results[0]:
             matches.append(
                 (
-                    hit["entity"].get("video_name"),
+                    hit["entity"].get("path"),
                     hit["entity"].get("frame_idx"),
                     hit["distance"],
                 )
             )
         return matches
 
+    def search_by_text(self, query: str, top_k: int = 5):
+        query_embedding = self.model.extract_text_features(query).flatten()
+        return self._search(query_embedding=query_embedding, top_k=top_k)
+
     def search_by_image(self, image: Image.Image, top_k: int = 5):
         query_embedding = self.model.extract_image_features(image).flatten()
-        search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-
-        results = self.milvus_handler.collection.search(
-            data=[query_embedding],
-            anns_field="embedding",
-            param=search_params,
-            limit=top_k,
-            output_fields=["video_name", "frame_idx"],
-        )
-
-        matches = []
-        for hit in results[0]:
-            matches.append(
-                (
-                    hit.entity.get("video_name"),
-                    hit.entity.get("frame_idx"),
-                    hit.distance,
-                )
-            )
-        return matches
+        return self._search(query_embedding=query_embedding, top_k=top_k)

@@ -1,29 +1,53 @@
+import logging
 from pathlib import Path
 
-from video_similarity_search.backend.database_handler import MilvusHandler, VideoDatabase
-from video_similarity_search.backend.model import Model
-from video_similarity_search.backend.search import VideoSearch
-from video_similarity_search.backend.video_handler import VideoHandler
+import click
+
+from video_similarity_search.backend.database_handler import MilvusDatabase, VideoToDatabase
+from video_similarity_search.backend.embeddingextractor import VideoEmbeddingExtractor
+from video_similarity_search.backend.model import CLIPModelProcessor
+from video_similarity_search.backend.search import Search
+
+logger = logging.getLogger(__name__)
 
 
-def main():
-    model = Model()
-    video_handler = VideoHandler(model)
-    milvus_handler = MilvusHandler()
-    video_database = VideoDatabase(model, video_handler, milvus_handler)
+@click.group()
+def cli():
+    pass
 
-    # Example usage
-    video_folder = Path("./videos")
-    video_database.add_videos_from_folder(video_folder)
 
-    milvus_handler.query(expr="id >= 0")
+@click.command("video_similarity_search")
+@click.option(
+    "--video-folder",
+    type=Path,
+    required=True,
+    help="Path to the folder containing videos.",
+)
+@click.option("--query", type=str, default="Person", help="Text query for searching videos.")
+@click.option(
+    "--remove_old_data", is_flag=True, help="Delete all the existing images in the database."
+)
+def video_similarity_search(video_folder: Path, query: str, remove_old_data: bool):
+    if not video_folder.exists():
+        logger.error(f"Folder {video_folder} does not exist.")
+        raise ValueError(f"Folder {video_folder} does not exist.")
 
-    video_search = VideoSearch(model, milvus_handler)
-    query = "A person"
+    # Only CLIP model is supported right now
+    # Initializing the model, video handler, milvus handler, video database and search
+    model = CLIPModelProcessor()
+    video_handler = VideoEmbeddingExtractor(model)
+    milvus_handler = MilvusDatabase(remove_old_data=remove_old_data)
+    video_database = VideoToDatabase(video_handler, milvus_handler)
+    video_search = Search(model, milvus_handler)
+
+    video_database.add_files_from_folder(video_folder)
     results = video_search.search_by_text(query)
     video_handler.present_query_results(results)
-    print("Search results:", results)
+    logger.info(f"Search results: {results}")
+
+
+cli.add_command(video_similarity_search)
 
 
 if __name__ == "__main__":
-    main()
+    cli()

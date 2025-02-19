@@ -1,0 +1,21 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Video Similarity Search",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "video_similarity_search.cli",
+      "console": "integratedTerminal",
+      "args": [
+        "video_similarity_search",
+        "--video-folder",
+        "./videos",
+        "--remove_old_data"
+      ]
+    }
+  ]
+}

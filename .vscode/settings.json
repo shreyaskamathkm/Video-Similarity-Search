@@ -1,0 +1,15 @@
+{
+  "python.formatting.provider": "none", // Disables other formatters like autopep8 or black
+  "editor.formatOnSave": true, // Enables formatting on save
+  "editor.defaultFormatter": "charliermarsh.ruff", // Specifies Ruff as the default formatter
+  "ruff.configuration": "ruff.toml",
+  "python.linting.enabled": true, // Enables linting
+  "python.linting.ruffEnabled": true, // Enables Ruff linting
+  "python.linting.ruffPath": "ruff", // Path to the Ruff executable
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic", // Enables basic type checking
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  }
+}

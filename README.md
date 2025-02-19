@@ -13,11 +13,6 @@ ______________________________________________________________________
     - [Python Dependencies](#python-dependencies)
   - [Installation](#installation)
   - [Usage](#usage)
-    - [Adding Videos to the Database](#adding-videos-to-the-database)
-    - [Text-based Search](#text-based-search)
-    - [Image-based Search](#image-based-search)
-    - [Managing the Database](#managing-the-database)
-  - [File Structure](#file-structure)
   - [Acknowledgements](#acknowledgements)
 
 ______________________________________________________________________
@@ -68,67 +63,25 @@ ______________________________________________________________________
 
    - Ensure Milvus is running locally or remotely.
    - Update the connection URI in the `MilvusHandler` class (default is `http://localhost:19530`).
+   - If Milvus client is already installed, you can start it by using
+
+   ```bash
+   bash standalone_embed.sh
+   ```
 
 ______________________________________________________________________
 
 ## Usage
 
-### Adding Videos to the Database
-
-To add videos from a folder to the database:
-
-```bash
-python main.py
-```
-
-Modify the `video_folder` variable in the `__main__` function to specify the path to your video directory.
-
-### Text-based Search
-
-Perform a search using a text query:
+You can run the code by using the following CLI:
 
 ```python
-query = "A person stealing a bag"
-results = video_search.search_by_text(query)
-print("Search results:", results)
+vss --video-folder <path-to-the-video-folder> --remove_old_data
 ```
-
-### Image-based Search
-
-Perform a search using an image query:
 
 ```python
-from PIL import Image
-image = Image.open("query_image.jpg")
-results = video_search.search_by_image(image)
-print("Search results:", results)
+vss --help
 ```
-
-### Managing the Database
-
-- Query videos:
-  ```python
-  milvus_handler.query(expr="id >= 0")
-  ```
-- Delete a specific video:
-  ```python
-  milvus_handler.delete_video("video_name.mp4")
-  ```
-- Drop the entire collection:
-  ```python
-  milvus_handler.delete_collection()
-  ```
-
-______________________________________________________________________
-
-## File Structure
-
-- `main.py`: Main script to add videos and perform searches.
-- `handlers/`:
-  - `model.py`: CLIP model operations.
-  - `video_handler.py`: Handles video processing and frame embedding extraction.
-  - `milvus_handler.py`: Handles Milvus operations including saving and searching embeddings.
-  - `search.py`: Search operations for text and image queries.
 
 ______________________________________________________________________
 
