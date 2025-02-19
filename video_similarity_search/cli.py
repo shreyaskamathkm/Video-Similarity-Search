@@ -24,7 +24,9 @@ def cli():
     help="Path to the folder containing videos.",
 )
 @click.option("--query", type=str, default="Person", help="Text query for searching videos.")
-@click.option("--remove_old_data", is_flag=True, help="Text query for searching videos.")
+@click.option(
+    "--remove_old_data", is_flag=True, help="Delete all the existing images in the database."
+)
 def video_similarity_search(video_folder: Path, query: str, remove_old_data: bool):
     if not video_folder.exists():
         logger.error(f"Folder {video_folder} does not exist.")
