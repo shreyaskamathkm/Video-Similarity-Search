@@ -24,7 +24,7 @@ class EmbeddingExtractor(ABC):
 
 # Class for Video operations
 class VideoEmbeddingExtractor(EmbeddingExtractor):
-    def __init__(self, model: BaseModel, frame_skip: int = 2):
+    def __init__(self, model: BaseModel, frame_skip: int = 5):
         super().__init__(model)
         self.frame_skip = frame_skip
 

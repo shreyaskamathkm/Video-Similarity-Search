@@ -12,6 +12,7 @@ opencv-python = "^4.9.0.80"
 pymilvus = "^2.5.0"
 transformers= "^4.47.0"
 rich ="13.9.4"
+click = "^8.1.8"
 torch = [
     {version = "^2.5.1", source="pypi", markers = "sys_platform == 'darwin'"},
     {version = "^2.5.1", source = "torchgpu", markers = "sys_platform == 'linux'"}
@@ -44,3 +45,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.poetry.scripts]
+vss = "video_similarity_search.cli:video_similarity_search"

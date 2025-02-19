@@ -21,7 +21,7 @@ class Search:
         for hit in results[0]:
             matches.append(
                 (
-                    hit["entity"].get("video_name"),
+                    hit["entity"].get("path"),
                     hit["entity"].get("frame_idx"),
                     hit["distance"],
                 )

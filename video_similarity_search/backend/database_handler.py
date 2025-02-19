@@ -69,7 +69,7 @@ class MilvusDatabase(Database):
 
         if self.client.has_collection(self.collection_name):
             raise RuntimeError(
-                f"Collection {self.collection_name} already exists. Set drop_old=True to create a new one instead."
+                f"Collection {self.collection_name} already exists. Set remove_old_data=True to create a new one instead."
             )
         # Check if the collection exists without 'using'
         if not self.client.has_collection(self.collection_name):
@@ -204,5 +204,5 @@ class VideoToDatabase(ModalityToDatabase):
 
     def add_files_from_folder(self, folder_path: Path):
         paths = [path for i in VIDEO_SUFFIXES for path in folder_path.glob("*." + i)]
-        for video_path in [paths[0]]:
+        for video_path in paths:
             self._add_video_to_database(video_path.resolve())
