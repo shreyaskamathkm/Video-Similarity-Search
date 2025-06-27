@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -11,16 +12,17 @@ from pymilvus import (
     MilvusClient,
 )
 
-from video_similarity_search.backend.model import Model
+from video_similarity_search.backend.model import VLMBaseModel
 from video_similarity_search.backend.video_handler import VideoHandler
 
+logger = logging.getLogger(__name__)
 VIDEO_SUFFIXES = ["mp4", "mov"]
 
 
 # Base class for database operations
 class Database:
-    def __init__(self, collection_name: str, remove_old_data: bool) -> None:
-        self.remove_old_data = remove_old_data
+    def __init__(self, collection_name: str, reset_dataset: bool) -> None:
+        self.reset_dataset = reset_dataset
         self.collection_name = collection_name
 
     def insert_video_embeddings(self, *args: Any, **kwargs: Any) -> None:
@@ -38,16 +40,18 @@ class Database:
 
 # Milvus database handler
 class MilvusHandler(Database):
-    def __init__(self, drop_old: bool = True) -> None:
-        super().__init__(collection_name="video_embeddings", remove_old_data=drop_old)
+    def __init__(
+        self, collection_name: str = "video_embeddings", reset_dataset: bool = True
+    ) -> None:
+        super().__init__(collection_name=collection_name, reset_dataset=reset_dataset)
         self.search_params = {"nprobe": 128}
         try:
             # Initialize the client directly using environment variable for token
             milvus_token = os.environ.get("MILVUS_TOKEN", "root:Milvus")
             self.client = MilvusClient(uri="http://localhost:19530", token=milvus_token)
-            print("Connected to Milvus.")
+            logging.info("Connected to Milvus.")
         except Exception as e:
-            print(f"Error connecting to Milvus: {e}")
+            logging.error(f"Error connecting to Milvus: {e}")
             raise
 
         self._create_or_get_collection()
@@ -55,16 +59,16 @@ class MilvusHandler(Database):
         self._create_index()  # Create index if it doesn't exist
 
         self.client.load_collection(self.collection_name)  # Load collection after initialization
-        print(f"Collection '{self.collection_name}' loaded into memory.")
+        logging.info(f"Collection '{self.collection_name}' loaded into memory.")
 
     def _create_or_get_collection(self) -> None:
         if self.client.has_collection(self.collection_name):
-            if self.drop_old:
+            if self.reset_dataset:
                 self.client.drop_collection(self.collection_name)
             else:
                 raise RuntimeError(
                     f"Collection {self.collection_name} already exists.\
-                        Set drop_old=True to create a new one instead."
+                        Set reset_dataset=True to create a new one instead."
                 )
 
         # Check if the collection exists without 'using'
@@ -93,7 +97,7 @@ class MilvusHandler(Database):
 
             # Create the collection
             self.client.create_collection(collection_name=self.collection_name, schema=schema)
-            print(f"Collection '{self.collection_name}' created.")
+            logging.info(f"Collection '{self.collection_name}' created.")
 
     def _create_index(self) -> None:
         # Create index for the 'embedding' field
@@ -108,7 +112,7 @@ class MilvusHandler(Database):
         )
 
         self.client.create_index(collection_name=self.collection_name, index_params=index_params)
-        print(f"Index created for '{self.collection_name}'.")
+        logging.info(f"Index created for '{self.collection_name}'.")
 
     def save_embeddings(
         self, video_path: str, embeddings: np.ndarray, frame_indices: list[int]
@@ -137,9 +141,9 @@ class MilvusHandler(Database):
         try:
             # collection = Collection(name=self.collection_name)
             self.client.insert(collection_name=self.collection_name, data=data)
-            print(f"Inserted {len(data)} records into '{self.collection_name}'.")
+            logging.info(f"Inserted {len(data)} records into '{self.collection_name}'.")
         except Exception as e:
-            print(f"Error saving embeddings: {e}")
+            logging.error(f"Error saving embeddings: {e}")
             raise
 
     def search(self, query_embedding: Any, top_k: int = 5) -> list[dict[str, Any]]:
@@ -151,7 +155,7 @@ class MilvusHandler(Database):
         try:
             # Ensure the collection is loaded
             self.client.load_collection(self.collection_name)
-            print(f"Collection '{self.collection_name}' loaded into memory.")
+            logging.info(f"Collection '{self.collection_name}' loaded into memory.")
 
             # Perform the search
             return self.client.search(
@@ -163,12 +167,12 @@ class MilvusHandler(Database):
                 output_fields=["video_name", "frame_idx"],
             )
         except Exception as e:
-            print(f"Error during search: {e}")
+            logging.error(f"Error during search: {e}")
             raise
 
     def query(self, expr: str) -> list[dict[str, Any]]:
         result = self.client.query(collection_name=self.collection_name, filter=expr)
-        print(result)
+        logging.info(result)
         return result
 
     def video_exists(self, path: Path) -> bool:
@@ -180,34 +184,43 @@ class MilvusHandler(Database):
                 output_fields=["id"],
             )
             exists = len(result) > 0
-            print(f"Video exists: {exists}")
+            logging.info(f"Video exists: {exists}")
             return exists
         except Exception as e:
-            print(f"Error checking if video exists: {e}")
+            logging.error(f"Error checking if video exists: {e}")
             raise
 
     def delete_file(self, video_name: str) -> None:
         try:
             collection = Collection(name=self.collection_name)
             collection.delete(expr=f"video_name == '{video_name}'")
-            print(f"Deleted video '{video_name}' from '{self.collection_name}'.")
+            logging.info(f"Deleted video '{video_name}' from '{self.collection_name}'.")
         except Exception as e:
-            print(f"Error deleting video: {e}")
+            logging.error(f"Error deleting video: {e}")
             raise
 
 
 # Class for managing video database operations
 class VideoDatabase:
-    def __init__(self, model: Model, video_handler: VideoHandler, milvus_handler: MilvusHandler):
+    def __init__(
+        self,
+        model: VLMBaseModel,
+        video_handler: VideoHandler,
+        milvus_handler: MilvusHandler,
+        frame_skip: int,
+    ):
         self.model = model
+        self.frame_skip = frame_skip
         self.video_handler = video_handler
         self.milvus_handler = milvus_handler
 
     def add_video_to_database(self, video_path: Path) -> None:
-        embeddings, frame_indices = self.video_handler.extract_frame_embeddings(str(video_path))
+        embeddings, frame_indices = self.video_handler.extract_frame_embeddings(
+            str(video_path), self.frame_skip
+        )
 
         self.milvus_handler.save_embeddings(str(video_path), embeddings, frame_indices)
-        print(f"Video {video_path.name} added to the database.")
+        logging.info(f"Video {video_path.name} added to the database.")
 
     def add_videos_from_folder(self, folder_path: Path) -> None:
         paths = [path for i in VIDEO_SUFFIXES for path in folder_path.glob("*." + i)]

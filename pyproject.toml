@@ -11,7 +11,7 @@ pydantic = "^2.11.7"
 numpy = "^1.26.4"
 opencv-python = "^4.9.0.80"
 pymilvus = "^2.5.0"
-transformers = "^4.47.0"
+open_clip_torch = "^2.32.0 "
 torch = [
     { version = "^2.5.1", source = "pypi", markers = "sys_platform == 'darwin'" },
     { version = "^2.5.1", source = "torchgpu", markers = "sys_platform == 'linux'" },
@@ -20,7 +20,7 @@ torchvision = [
     { version = "^0.20", source = "pypi", markers = "sys_platform == 'darwin'" },
     { version = "^0.20", source = "torchgpu", markers = "sys_platform == 'linux'" },
 ]
-
+cloudpathlib = "^0.21.1"
 
 [[tool.poetry.source]]
 name = "torchcpu"

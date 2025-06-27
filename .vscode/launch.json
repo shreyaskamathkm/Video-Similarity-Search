@@ -3,11 +3,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Current File",
+      "name": "Run Video Similarity CLI",
       "type": "debugpy",
       "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/video_similarity_search/cli.py",
+      "console": "integratedTerminal",
+      "args": [
+        "run_video_similarity",
+        "--video-folder",
+        "./videos",
+        "--query",
+        "A person"
+      ]
     }
   ]
 }

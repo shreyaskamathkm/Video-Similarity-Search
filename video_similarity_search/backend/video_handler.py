@@ -1,15 +1,18 @@
+import logging
 import os
 
 import cv2
 import numpy as np
 from PIL import Image
 
-from video_similarity_search.backend.model import Model
+from video_similarity_search.backend.model import VLMBaseModel
+
+logger = logging.getLogger(__name__)
 
 
 # Class for Video operations
 class VideoHandler:
-    def __init__(self, model: Model) -> None:
+    def __init__(self, model: VLMBaseModel) -> None:
         self.model = model
 
     def extract_frame_embeddings(
@@ -40,17 +43,29 @@ class VideoHandler:
         self,
         results: list[tuple[str, int, float]],
         duration: int = 5,
+        min_frame_distance: int = 30,  # Minimum distance between frames to consider as separate
     ) -> None:
+        # Sort results by video_path, then by frame_idx (or by score if you prefer)
+        results = sorted(results, key=lambda x: (x[0], x[1]))
+        filtered_results = []
+        last_frame_idx = {}
         for video_path, frame_idx, score in results:
+            if (
+                video_path not in last_frame_idx
+                or abs(frame_idx - last_frame_idx[video_path]) >= min_frame_distance
+            ):
+                filtered_results.append((video_path, frame_idx, score))
+                last_frame_idx[video_path] = frame_idx
+        for video_path, frame_idx, score in filtered_results:
             cap = cv2.VideoCapture(video_path)
             fps = int(cap.get(cv2.CAP_PROP_FPS))
             cap.release()
 
             timestamp = self.frame_to_timestamp(frame_idx, fps)
             segment_path = self.extract_video_segment(video_path, frame_idx, fps, duration)
-            print(f"Match found in video: {video_path}")
-            print(f"Timestamp: {timestamp}, Score: {score:.2f}")
-            print(f"Segment saved at: {segment_path}")
+            logging.info(f"Match found in video: {video_path}")
+            logging.info(f"Timestamp: {timestamp}, Score: {score:.2f}")
+            logging.info(f"Segment saved at: {segment_path}")
 
     # Step 5: Convert frame index to timestamp
     def frame_to_timestamp(self, frame_idx: int, fps: int) -> str:
