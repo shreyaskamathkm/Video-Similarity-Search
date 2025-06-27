@@ -52,17 +52,16 @@ class MilvusHandler(Database):
             # Initialize the client directly using environment variable for token
             milvus_token = os.environ.get("MILVUS_TOKEN", "root:Milvus")
             self.client = MilvusClient(uri="http://localhost:19530", token=milvus_token)
-            logging.info("Connected to Milvus.")
+            logger.info("Connected to Milvus.")
         except Exception as e:
-            logging.error(f"Error connecting to Milvus: {e}")
+            logger.error(f"Error connecting to Milvus: {e}")
             raise
 
         self._create_or_get_collection()
 
-        self._create_index()  # Create index if it doesn't exist
-
-        self.client.load_collection(self.collection_name)  # Load collection after initialization
-        logging.info(f"Collection '{self.collection_name}' loaded into memory.")
+        self._create_index()
+        self.client.load_collection(self.collection_name)
+        logger.info(f"Collection '{self.collection_name}' loaded into memory.")
 
     def _create_or_get_collection(self) -> None:
         if self.client.has_collection(self.collection_name):
@@ -100,7 +99,7 @@ class MilvusHandler(Database):
 
             # Create the collection
             self.client.create_collection(collection_name=self.collection_name, schema=schema)
-            logging.info(f"Collection '{self.collection_name}' created.")
+            logger.info(f"Collection '{self.collection_name}' created.")
 
     def _create_index(self) -> None:
         # Create index for the 'embedding' field
@@ -115,7 +114,7 @@ class MilvusHandler(Database):
         )
 
         self.client.create_index(collection_name=self.collection_name, index_params=index_params)
-        logging.info(f"Index created for '{self.collection_name}'.")
+        logger.info(f"Index created for '{self.collection_name}'.")
 
     def save_embeddings(
         self, video_path: str, embeddings: np.ndarray, frame_indices: list[int]
@@ -144,9 +143,9 @@ class MilvusHandler(Database):
         try:
             # collection = Collection(name=self.collection_name)
             self.client.insert(collection_name=self.collection_name, data=data)
-            logging.info(f"Inserted {len(data)} records into '{self.collection_name}'.")
+            logger.info(f"Inserted {len(data)} records into '{self.collection_name}'.")
         except Exception as e:
-            logging.error(f"Error saving embeddings: {e}")
+            logger.error(f"Error saving embeddings: {e}")
             raise
 
     def search(self, query_embedding: Any, top_k: int = 5) -> list[dict[str, Any]]:
@@ -158,7 +157,7 @@ class MilvusHandler(Database):
         try:
             # Ensure the collection is loaded
             self.client.load_collection(self.collection_name)
-            logging.info(f"Collection '{self.collection_name}' loaded into memory.")
+            logger.info(f"Collection '{self.collection_name}' loaded into memory.")
 
             # Perform the search
             return self.client.search(
@@ -170,12 +169,12 @@ class MilvusHandler(Database):
                 output_fields=["video_name", "frame_idx"],
             )
         except Exception as e:
-            logging.error(f"Error during search: {e}")
+            logger.error(f"Error during search: {e}")
             raise
 
     def query(self, expr: str) -> list[dict[str, Any]]:
         result = self.client.query(collection_name=self.collection_name, filter=expr)
-        logging.info(result)
+        logger.info(result)
         return result
 
     def video_exists(self, path: Path) -> bool:
@@ -187,19 +186,53 @@ class MilvusHandler(Database):
                 output_fields=["id"],
             )
             exists = len(result) > 0
-            logging.info(f"Video exists: {exists}")
+            logger.info(f"Video exists: {exists}")
             return exists
         except Exception as e:
-            logging.error(f"Error checking if video exists: {e}")
+            logger.error(f"Error checking if video exists: {e}")
+            raise
+
+    def get_all_videos_and_frame_indices(self) -> dict[str, list[int]]:
+        """
+        Retrieves all video names and their corresponding frame indices from the database.
+
+        Returns:
+            A dictionary where keys are video names and values are lists of frame indices.
+        """
+        try:
+            # A filter to select all entries.
+            # Note: The default limit for query is 100, so we set it to the max value.
+            results = self.client.query(
+                collection_name=self.collection_name,
+                filter="id >= 0",
+                output_fields=["video_name", "frame_idx"],
+                limit=16384,
+            )
+
+            video_data = {}
+            for res in results:
+                video_name = res["video_name"]
+                frame_idx = res["frame_idx"]
+                if video_name not in video_data:
+                    video_data[video_name] = []
+                video_data[video_name].append(frame_idx)
+
+            # Sort frame indices for each video
+            for video_name in video_data:
+                video_data[video_name].sort()
+
+            logger.info(f"{video_data.keys()}")
+        except Exception as e:
+            logger.error(f"Error retrieving all videos and frame indices: {e}")
             raise
 
     def delete_file(self, video_name: str) -> None:
         try:
             collection = Collection(name=self.collection_name)
             collection.delete(expr=f"video_name == '{video_name}'")
-            logging.info(f"Deleted video '{video_name}' from '{self.collection_name}'.")
+            logger.info(f"Deleted video '{video_name}' from '{self.collection_name}'.")
         except Exception as e:
-            logging.error(f"Error deleting video: {e}")
+            logger.error(f"Error deleting video: {e}")
             raise
 
 
@@ -209,21 +242,21 @@ class VideoDatabase:
         self,
         model: VLMBaseModel,
         video_handler: VideoHandler,
-        milvus_handler: MilvusHandler,
+        database_handler: MilvusHandler,
         frame_skip: int,
     ):
         self.model = model
         self.frame_skip = frame_skip
         self.video_handler = video_handler
-        self.milvus_handler = milvus_handler
+        self.database_handler = database_handler
 
     def add_video_to_database(self, video_path: Path) -> None:
         embeddings, frame_indices = self.video_handler.extract_frame_embeddings(
             str(video_path), self.frame_skip
         )
 
-        self.milvus_handler.save_embeddings(str(video_path), embeddings, frame_indices)
-        logging.info(f"Video {video_path.name} added to the database.")
+        self.database_handler.save_embeddings(str(video_path), embeddings, frame_indices)
+        logger.info(f"Video {video_path.name} added to the database.")
 
     def add_videos_from_folder(self, folder_path: Path) -> None:
         paths = [path for i in VIDEO_SUFFIXES for path in folder_path.glob("*." + i)]
