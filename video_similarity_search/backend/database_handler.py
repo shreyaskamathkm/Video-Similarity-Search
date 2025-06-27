@@ -273,7 +273,7 @@ class MilvusHandler(Database):
                 limit=16384,
             )
 
-            video_data = {}
+            video_data: dict[str, list[int]] = {}
             for res in results:
                 video_name = res["video_name"]
                 frame_idx = res["frame_idx"]

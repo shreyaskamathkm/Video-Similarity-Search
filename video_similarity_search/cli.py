@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 import click
-from cloudpathlib import AnyPath
+from cloudpathlib import AnyPath, S3Path
 
 from video_similarity_search.backend.database_handler import MilvusHandler, VideoDatabase
 from video_similarity_search.backend.model import model_factory
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """A command-line interface for video similarity search."""
     pass
 
@@ -28,7 +28,7 @@ def cli():
     type=AnyPath,
     help="Path to the config file.",
 )
-def run_video_similarity(config_path: Path | str) -> None:
+def run_video_similarity(config_path: Path | S3Path) -> None:
     """Runs the video similarity search.
 
     Args:
@@ -60,7 +60,7 @@ def run_video_similarity(config_path: Path | str) -> None:
 
     # Populate the database with video embeddings
     logger.info(f"Populating database from folder: {app_config.video_folder}")
-    video_database.add_videos_from_folder(app_config.video_folder)
+    video_database.add_videos_from_folder(Path(str(app_config.video_folder)))
 
     # Log information about the database content
     milvus_handler.get_all_videos_and_frame_indices()

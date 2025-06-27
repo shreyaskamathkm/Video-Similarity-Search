@@ -18,7 +18,7 @@ class VLMBaseModel:
         self.model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def extract_text_features(self, text: str) -> np.ndarray:  # type: ignore[override]
+    def extract_text_features(self, text: str) -> np.ndarray:
         """Extracts features from text.
 
         Args:
@@ -29,7 +29,7 @@ class VLMBaseModel:
         """
         raise NotImplementedError("This should be implemented in the subclass")
 
-    def extract_image_features(self, image: Image.Image) -> np.ndarray:  # type: ignore[override]
+    def extract_image_features(self, image: Image.Image) -> np.ndarray:
         """Extracts features from an image.
 
         Args:
@@ -40,7 +40,7 @@ class VLMBaseModel:
         """
         raise NotImplementedError("This should be implemented in the subclass")
 
-    def get_embedding_length(self):  # type: ignore[override]
+    def get_embedding_length(self) -> int:
         """Gets the length of the embedding vector.
 
         Raises:
@@ -66,7 +66,7 @@ class ClipModel(VLMBaseModel):
         self.tokenizer = open_clip.get_tokenizer(model_architecture)
         self._embedding_length = self.model.text_projection.shape[1]
 
-    def extract_text_features(self, text: str) -> np.ndarray:  # type: ignore[override]
+    def extract_text_features(self, text: str) -> np.ndarray:
         """Extracts features from text using the CLIP model.
 
         Args:
@@ -81,7 +81,7 @@ class ClipModel(VLMBaseModel):
             features = self.model.encode_text(tokens)
         return features.cpu().numpy()
 
-    def extract_image_features(self, image: Image.Image) -> np.ndarray:  # type: ignore[override]
+    def extract_image_features(self, image: Image.Image) -> np.ndarray:
         """Extracts features from an image using the CLIP model.
 
         Args:
@@ -90,7 +90,7 @@ class ClipModel(VLMBaseModel):
         Returns:
             A numpy array of image features.
         """
-        image_input = self.preprocess(image).unsqueeze(0).to(self.device)  # type: ignore[override]
+        image_input = self.preprocess(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
             features = self.model.encode_image(image_input)
         return features.cpu().numpy()

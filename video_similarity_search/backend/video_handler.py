@@ -1,5 +1,7 @@
 import logging
 
+import numpy as np
+
 from video_similarity_search.backend.query_result_formatter import QueryResultFormatter
 from video_similarity_search.backend.video_processor import VideoProcessor
 from video_similarity_search.backend.video_segment_extractor import VideoSegmentExtractor
@@ -27,7 +29,9 @@ class VideoHandler:
         self.video_segment_extractor = video_segment_extractor
         self.query_result_formatter = query_result_formatter
 
-    def extract_frame_embeddings(self, video_path: str, frame_skip: int = 2):
+    def extract_frame_embeddings(
+        self, video_path: str, frame_skip: int = 2
+    ) -> tuple[np.ndarray, list[int]]:
         """Extracts frame embeddings from a video.
 
         Args:

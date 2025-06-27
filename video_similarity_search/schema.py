@@ -26,7 +26,7 @@ class AppConfig(BaseModel):
     model_pretrained: str = Field(description="Pretrained weights for the model.")
 
     @staticmethod
-    def _read_yaml(config_path: S3Path | Path):
+    def _read_yaml(config_path: S3Path | Path) -> dict:
         """Reads a YAML file.
 
         Args:
@@ -39,7 +39,7 @@ class AppConfig(BaseModel):
             return yaml.safe_load(f)
 
     @classmethod
-    def from_yaml(cls, config_path: S3Path | Path):
+    def from_yaml(cls, config_path: S3Path | Path) -> "AppConfig":
         """Creates an AppConfig object from a YAML file.
 
         Args:
