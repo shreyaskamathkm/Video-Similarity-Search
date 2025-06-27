@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 def cli():
+    """A command-line interface for video similarity search."""
     pass
 
 
@@ -28,6 +29,11 @@ def cli():
     help="Path to the config file.",
 )
 def run_video_similarity(config_path: Path | str) -> None:
+    """Runs the video similarity search.
+
+    Args:
+        config_path: The path to the config file.
+    """
     # configuration
     app_config = AppConfig.from_yaml(config_path)
 

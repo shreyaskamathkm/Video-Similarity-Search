@@ -8,11 +8,29 @@ from video_similarity_search.backend.model import VLMBaseModel
 
 
 class VideoSearch:
+    """A class for performing video search."""
+
     def __init__(self, model: VLMBaseModel, milvus_handler: MilvusHandler):
+        """Initializes the VideoSearch object.
+
+        Args:
+            model: The VLMBaseModel to use for extracting features.
+            milvus_handler: The MilvusHandler to use for searching.
+        """
         self.model = model
         self.milvus_handler = milvus_handler
 
     def _search(self, query_embedding: np.ndarray, top_k: int = 5) -> list[tuple[str, int, float]]:
+        """Performs a search using a query embedding.
+
+        Args:
+            query_embedding: The query embedding to search for.
+            top_k: The number of results to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the video name, frame index,
+            and distance.
+        """
         results = self.milvus_handler.search(query_embedding=query_embedding, top_k=top_k)
         matches: list[tuple[str, int, float]] = []
         for hit in results[0]:
@@ -33,9 +51,29 @@ class VideoSearch:
         return matches
 
     def search_by_text(self, query: str, top_k: int = 5) -> list[tuple[str, int, float]]:
+        """Performs a search using a text query.
+
+        Args:
+            query: The text query to search for.
+            top_k: The number of results to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the video name, frame index,
+            and distance.
+        """
         query_embedding = self.model.extract_text_features(query).flatten()
         return self._search(query_embedding=query_embedding, top_k=top_k)
 
     def search_by_image(self, image: Image.Image, top_k: int = 5) -> list[tuple[str, int, float]]:
+        """Performs a search using an image query.
+
+        Args:
+            image: The image query to search for.
+            top_k: The number of results to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the video name, frame index,
+            and distance.
+        """
         query_embedding = self.model.extract_image_features(image).flatten()
         return self._search(query_embedding=query_embedding, top_k=top_k)

@@ -4,7 +4,18 @@ import cv2
 
 
 class VideoSegmentExtractor:
+    """A class to extract video segments."""
+
     def frame_to_timestamp(self, frame_idx: int, fps: int) -> str:
+        """Converts a frame index to a timestamp string.
+
+        Args:
+            frame_idx: The frame index.
+            fps: The frames per second of the video.
+
+        Returns:
+            The timestamp string in the format HH:MM:SS.
+        """
         seconds = frame_idx / fps
         mins, secs = divmod(seconds, 60)
         hrs, mins = divmod(mins, 60)
@@ -18,6 +29,18 @@ class VideoSegmentExtractor:
         duration: int = 5,
         output_dir: str = "./segments",
     ) -> str:
+        """Extracts a video segment around a given frame index.
+
+        Args:
+            video_path: The path to the video.
+            frame_idx: The frame index around which to extract the segment.
+            fps: The frames per second of the video.
+            duration: The duration of the segment to extract in seconds.
+            output_dir: The directory to save the extracted segment.
+
+        Returns:
+            The path to the extracted video segment.
+        """
         start_frame = max(0, frame_idx - int(fps * duration // 2))
         end_frame = frame_idx + int(fps * duration // 2)
 

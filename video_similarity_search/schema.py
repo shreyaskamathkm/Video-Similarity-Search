@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 
 class AppConfig(BaseModel):
+    """A class to store the application configuration."""
+
     video_folder: AnyPath = Field(
         description="Path to the folder containing videos to process.",
     )
@@ -25,10 +27,26 @@ class AppConfig(BaseModel):
 
     @staticmethod
     def _read_yaml(config_path: S3Path | Path):
+        """Reads a YAML file.
+
+        Args:
+            config_path: The path to the YAML file.
+
+        Returns:
+            The content of the YAML file.
+        """
         with open(config_path) as f:
             return yaml.safe_load(f)
 
     @classmethod
     def from_yaml(cls, config_path: S3Path | Path):
+        """Creates an AppConfig object from a YAML file.
+
+        Args:
+            config_path: The path to the YAML file.
+
+        Returns:
+            An AppConfig object.
+        """
         config = cls._read_yaml(config_path)
         return cls(**config)
