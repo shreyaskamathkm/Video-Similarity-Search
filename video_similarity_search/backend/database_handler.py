@@ -123,7 +123,8 @@ class MilvusHandler(Database):
             raise ValueError("Embeddings should be a numpy ndarray")
         if embeddings.shape[1] != self.embedding_size:
             raise ValueError(
-                f"Embeddings should have {self.embedding_size} dimensions, but got {embeddings.shape[1]}"
+                f"Embeddings should have {self.embedding_size} dimensions, \
+                but got {embeddings.shape[1]}"
             )
         if not isinstance(video_path, str):
             video_path = str(video_path)
@@ -151,7 +152,8 @@ class MilvusHandler(Database):
     def search(self, query_embedding: Any, top_k: int = 5) -> list[dict[str, Any]]:
         if len(query_embedding) != self.embedding_size:
             raise ValueError(
-                f"Query embedding should have {self.embedding_size} dimensions, but got {len(query_embedding)}"
+                f"Query embedding should have {self.embedding_size} \
+                    dimensions, but got {len(query_embedding)}"
             )
 
         try:
