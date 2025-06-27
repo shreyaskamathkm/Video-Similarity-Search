@@ -21,6 +21,7 @@ torchvision = [
     { version = "^0.20", source = "torchgpu", markers = "sys_platform == 'linux'" },
 ]
 cloudpathlib = "^0.21.1"
+pyyaml = "^6.0.1"
 
 [[tool.poetry.source]]
 name = "torchcpu"

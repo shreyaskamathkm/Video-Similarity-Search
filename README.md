@@ -137,3 +137,7 @@ ______________________________________________________________________
 - [OpenAI CLIP](https://github.com/openai/CLIP)
 - [Milvus](https://milvus.io/)
 - [OpenCV](https://opencv.org/)
+
+Siglip2 models available
+(model_name, pretrained dataset)
+('ViT-B-32-SigLIP2-256', 'webli'), ('ViT-B-16-SigLIP2', 'webli'), ('ViT-B-16-SigLIP2-256', 'webli'), ('ViT-B-16-SigLIP2-384', 'webli'), ('ViT-B-16-SigLIP2-512', 'webli'), ('ViT-L-16-SigLIP2-256', 'webli'), ('ViT-L-16-SigLIP2-384', 'webli'), ('ViT-L-16-SigLIP2-512', 'webli'), ('ViT-SO400M-14-SigLIP2', 'webli'), ('ViT-SO400M-14-SigLIP2-378', 'webli'), ('ViT-SO400M-16-SigLIP2-256', 'webli'), ('ViT-SO400M-16-SigLIP2-384', 'webli'), ('ViT-SO400M-16-SigLIP2-512', 'webli'), ('ViT-gopt-16-SigLIP2-256', 'webli'), ('ViT-gopt-16-SigLIP2-384', 'webli'),

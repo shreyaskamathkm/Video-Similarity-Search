@@ -39,23 +39,34 @@ class VideoHandler:
         cap.release()
         return np.vstack(embeddings), frame_indices
 
+
     def present_query_results(
         self,
         results: list[tuple[str, int, float]],
         duration: int = 5,
-        min_frame_distance: int = 30,  # Minimum distance between frames to consider as separate
+        min_time_distance: float = 2.0,  # Minimum distance in seconds
     ) -> None:
-        # Sort results by video_path, then by frame_idx (or by score if you prefer)
-        results = sorted(results, key=lambda x: (x[0], x[1]))
-        filtered_results = []
-        last_frame_idx = {}
+        # Group results by video_path
+        from collections import defaultdict
+
+        grouped = defaultdict(list)
         for video_path, frame_idx, score in results:
-            if (
-                video_path not in last_frame_idx
-                or abs(frame_idx - last_frame_idx[video_path]) >= min_frame_distance
-            ):
-                filtered_results.append((video_path, frame_idx, score))
-                last_frame_idx[video_path] = frame_idx
+            grouped[video_path].append((frame_idx, score))
+
+        filtered_results = []
+        for video_path, frames_scores in grouped.items():
+            # Get FPS for this video
+            cap = cv2.VideoCapture(video_path)
+            fps = int(cap.get(cv2.CAP_PROP_FPS))
+            cap.release()
+            min_frame_distance = int(fps * min_time_distance)
+            frames_scores.sort()
+            last_frame_idx = -min_frame_distance
+            for frame_idx, score in frames_scores:
+                if frame_idx - last_frame_idx >= min_frame_distance:
+                    filtered_results.append((video_path, frame_idx, score))
+                    last_frame_idx = frame_idx
+
         for video_path, frame_idx, score in filtered_results:
             cap = cv2.VideoCapture(video_path)
             fps = int(cap.get(cv2.CAP_PROP_FPS))

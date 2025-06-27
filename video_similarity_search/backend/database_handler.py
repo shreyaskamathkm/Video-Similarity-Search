@@ -21,9 +21,10 @@ VIDEO_SUFFIXES = ["mp4", "mov"]
 
 # Base class for database operations
 class Database:
-    def __init__(self, collection_name: str, reset_dataset: bool) -> None:
+    def __init__(self, collection_name: str, reset_dataset: bool, embedding_size: int) -> None:
         self.reset_dataset = reset_dataset
         self.collection_name = collection_name
+        self.embedding_size = embedding_size
 
     def insert_video_embeddings(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError("This should be implemented in the subclass")
@@ -38,12 +39,14 @@ class Database:
         raise NotImplementedError("This should be implemented in the subclass")
 
 
-# Milvus database handler
 class MilvusHandler(Database):
-    def __init__(
-        self, collection_name: str = "video_embeddings", reset_dataset: bool = True
-    ) -> None:
-        super().__init__(collection_name=collection_name, reset_dataset=reset_dataset)
+    def __init__(self, collection_name: str, reset_dataset: bool, embedding_size: int) -> None:
+        super().__init__(
+            collection_name=collection_name,
+            reset_dataset=reset_dataset,
+            embedding_size=embedding_size,
+        )
+
         self.search_params = {"nprobe": 128}
         try:
             # Initialize the client directly using environment variable for token
@@ -89,7 +92,7 @@ class MilvusHandler(Database):
                 FieldSchema(
                     name="embedding",
                     dtype=DataType.FLOAT_VECTOR,
-                    dim=512,
+                    dim=self.embedding_size,
                     is_primary=False,
                 ),
             ]
@@ -119,9 +122,9 @@ class MilvusHandler(Database):
     ) -> None:
         if not isinstance(embeddings, np.ndarray):
             raise ValueError("Embeddings should be a numpy ndarray")
-        if embeddings.shape[1] != 512:
+        if embeddings.shape[1] != self.embedding_size:
             raise ValueError(
-                f"Embeddings should have 512 dimensions, but got {embeddings.shape[1]}"
+                f"Embeddings should have {self.embedding_size} dimensions, but got {embeddings.shape[1]}"
             )
         if not isinstance(video_path, str):
             video_path = str(video_path)
@@ -147,9 +150,9 @@ class MilvusHandler(Database):
             raise
 
     def search(self, query_embedding: Any, top_k: int = 5) -> list[dict[str, Any]]:
-        if len(query_embedding) != 512:
+        if len(query_embedding) != self.embedding_size:
             raise ValueError(
-                f"Query embedding should have 512 dimensions, but got {len(query_embedding)}"
+                f"Query embedding should have {self.embedding_size} dimensions, but got {len(query_embedding)}"
             )
 
         try:

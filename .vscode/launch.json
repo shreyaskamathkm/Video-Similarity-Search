@@ -10,10 +10,8 @@
       "console": "integratedTerminal",
       "args": [
         "run_video_similarity",
-        "--video-folder",
-        "./videos",
-        "--query",
-        "A person"
+        "--config-path",
+        "config/video_search_similarity.yaml"
       ]
     }
   ]

@@ -1,0 +1,8 @@
+video_folder: ./videos
+query: A person
+collection_name: video_search_similarity
+reset_dataset: true
+frame_skip: 2
+model_name: clip
+model_architecture: ViT-B-32
+model_pretrained: openai
