@@ -1,3 +1,5 @@
+
+import numpy as np
 from PIL import Image
 
 from video_similarity_search.backend.database_handler import MilvusHandler
@@ -11,41 +13,36 @@ class VideoSearch:
         self.model = model
         self.milvus_handler = milvus_handler
 
-    def search_by_text(self, query: str, top_k: int = 5):
-        query_embedding = self.model.extract_text_features(query).flatten()
-
+    def _search(
+        self, query_embedding: np.ndarray, top_k: int = 5
+    ) -> list[tuple[str, int, float]]:
         results = self.milvus_handler.search(query_embedding=query_embedding, top_k=top_k)
-
-        matches = []
+        matches: list[tuple[str, int, float]] = []
         for hit in results[0]:
+            video_name = hit.entity.get("video_name")
+            frame_idx = hit.entity.get("frame_idx")
+            distance = hit.distance
+            if video_name is None or frame_idx is None or distance is None:
+                raise ValueError(
+                    "Milvus search result contains None for video_name, frame_idx, or distance."
+                )
             matches.append(
                 (
-                    hit["entity"].get("video_name"),
-                    hit["entity"].get("frame_idx"),
-                    hit["distance"],
+                    str(video_name),
+                    int(frame_idx),
+                    float(distance),
                 )
             )
         return matches
 
-    def search_by_image(self, image: Image.Image, top_k: int = 5):
+    def search_by_text(
+        self, query: str, top_k: int = 5
+    ) -> list[tuple[str, int, float]]:
+        query_embedding = self.model.extract_text_features(query).flatten()
+        return self._search(query_embedding=query_embedding, top_k=top_k)
+
+    def search_by_image(
+        self, image: Image.Image, top_k: int = 5
+    ) -> list[tuple[str, int, float]]:
         query_embedding = self.model.extract_image_features(image).flatten()
-        search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-
-        results = self.milvus_handler.collection.search(
-            data=[query_embedding],
-            anns_field="embedding",
-            param=search_params,
-            limit=top_k,
-            output_fields=["video_name", "frame_idx"],
-        )
-
-        matches = []
-        for hit in results[0]:
-            matches.append(
-                (
-                    hit.entity.get("video_name"),
-                    hit.entity.get("frame_idx"),
-                    hit.distance,
-                )
-            )
-        return matches
+        return self._search(query_embedding=query_embedding, top_k=top_k)

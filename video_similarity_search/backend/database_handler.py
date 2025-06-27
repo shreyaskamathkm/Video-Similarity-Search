@@ -1,4 +1,6 @@
-from typing import List
+import os
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 from pymilvus import (
@@ -15,19 +17,39 @@ from video_similarity_search.backend.video_handler import VideoHandler
 VIDEO_SUFFIXES = ["mp4", "mov"]
 
 
-class MilvusHandler:
-    def __init__(self, drop_old: bool = True):
-        self.drop_old = drop_old
+# Base class for database operations
+class Database:
+    def __init__(self, collection_name: str, remove_old_data: bool) -> None:
+        self.remove_old_data = remove_old_data
+        self.collection_name = collection_name
+
+    def insert_video_embeddings(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError("This should be implemented in the subclass")
+
+    def search(self, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError("This should be implemented in the subclass")
+
+    def query(self, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError("This should be implemented in the subclass")
+
+    def delete_file(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError("This should be implemented in the subclass")
+
+
+# Milvus database handler
+class MilvusHandler(Database):
+    def __init__(self, drop_old: bool = True) -> None:
+        super().__init__(collection_name="video_embeddings", remove_old_data=drop_old)
         self.search_params = {"nprobe": 128}
         try:
-            # Initialize the client directly
-            self.client = MilvusClient(uri="http://localhost:19530", token="root:Milvus")
+            # Initialize the client directly using environment variable for token
+            milvus_token = os.environ.get("MILVUS_TOKEN", "root:Milvus")
+            self.client = MilvusClient(uri="http://localhost:19530", token=milvus_token)
             print("Connected to Milvus.")
         except Exception as e:
             print(f"Error connecting to Milvus: {e}")
             raise
 
-        self.collection_name = "video_embeddings"
         self._create_or_get_collection()
 
         self._create_index()  # Create index if it doesn't exist
@@ -35,14 +57,16 @@ class MilvusHandler:
         self.client.load_collection(self.collection_name)  # Load collection after initialization
         print(f"Collection '{self.collection_name}' loaded into memory.")
 
-    def _create_or_get_collection(self):
-        if self.client.has_collection(self.collection_name) and self.drop_old:
-            self.client.drop_collection(self.collection_name)
-
+    def _create_or_get_collection(self) -> None:
         if self.client.has_collection(self.collection_name):
-            raise RuntimeError(
-                f"Collection {self.collection_name} already exists. Set drop_old=True to create a new one instead."
-            )
+            if self.drop_old:
+                self.client.drop_collection(self.collection_name)
+            else:
+                raise RuntimeError(
+                    f"Collection {self.collection_name} already exists.\
+                        Set drop_old=True to create a new one instead."
+                )
+
         # Check if the collection exists without 'using'
         if not self.client.has_collection(self.collection_name):
             # Define schema for the collection
@@ -71,7 +95,7 @@ class MilvusHandler:
             self.client.create_collection(collection_name=self.collection_name, schema=schema)
             print(f"Collection '{self.collection_name}' created.")
 
-    def _create_index(self):
+    def _create_index(self) -> None:
         # Create index for the 'embedding' field
         index_params = self.client.prepare_index_params()
 
@@ -86,7 +110,9 @@ class MilvusHandler:
         self.client.create_index(collection_name=self.collection_name, index_params=index_params)
         print(f"Index created for '{self.collection_name}'.")
 
-    def save_embeddings(self, video_path: str, embeddings: np.ndarray, frame_indices: List[int]):
+    def save_embeddings(
+        self, video_path: str, embeddings: np.ndarray, frame_indices: list[int]
+    ) -> None:
         if not isinstance(embeddings, np.ndarray):
             raise ValueError("Embeddings should be a numpy ndarray")
         if embeddings.shape[1] != 512:
@@ -116,7 +142,7 @@ class MilvusHandler:
             print(f"Error saving embeddings: {e}")
             raise
 
-    def search(self, query_embedding, top_k=5):
+    def search(self, query_embedding: Any, top_k: int = 5) -> list[dict[str, Any]]:
         if len(query_embedding) != 512:
             raise ValueError(
                 f"Query embedding should have 512 dimensions, but got {len(query_embedding)}"
@@ -140,11 +166,27 @@ class MilvusHandler:
             print(f"Error during search: {e}")
             raise
 
-    def query(self, expr: str):
+    def query(self, expr: str) -> list[dict[str, Any]]:
         result = self.client.query(collection_name=self.collection_name, filter=expr)
         print(result)
+        return result
 
-    def delete_video(self, video_name: str):
+    def video_exists(self, path: Path) -> bool:
+        try:
+            # Check if a video with the given path exists in the collection
+            result = self.client.query(
+                collection_name=self.collection_name,
+                filter=f"video_name == '{str(path)}'",
+                output_fields=["id"],
+            )
+            exists = len(result) > 0
+            print(f"Video exists: {exists}")
+            return exists
+        except Exception as e:
+            print(f"Error checking if video exists: {e}")
+            raise
+
+    def delete_file(self, video_name: str) -> None:
         try:
             collection = Collection(name=self.collection_name)
             collection.delete(expr=f"video_name == '{video_name}'")
@@ -161,13 +203,13 @@ class VideoDatabase:
         self.video_handler = video_handler
         self.milvus_handler = milvus_handler
 
-    def add_video_to_database(self, video_path: str):
-        embeddings, frame_indices = self.video_handler.extract_frame_embeddings(video_path)
+    def add_video_to_database(self, video_path: Path) -> None:
+        embeddings, frame_indices = self.video_handler.extract_frame_embeddings(str(video_path))
 
-        self.milvus_handler.save_embeddings(video_path, embeddings, frame_indices)
+        self.milvus_handler.save_embeddings(str(video_path), embeddings, frame_indices)
         print(f"Video {video_path.name} added to the database.")
 
-    def add_videos_from_folder(self, folder_path: str):
+    def add_videos_from_folder(self, folder_path: Path) -> None:
         paths = [path for i in VIDEO_SUFFIXES for path in folder_path.glob("*." + i)]
-        for video_path in [paths[0]]:
+        for video_path in paths:
             self.add_video_to_database(video_path.resolve())

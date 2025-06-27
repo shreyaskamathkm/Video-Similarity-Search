@@ -1,5 +1,4 @@
 import os
-from typing import List, Tuple
 
 import cv2
 import numpy as np
@@ -10,10 +9,12 @@ from video_similarity_search.backend.model import Model
 
 # Class for Video operations
 class VideoHandler:
-    def __init__(self, model: Model):
+    def __init__(self, model: Model) -> None:
         self.model = model
 
-    def extract_frame_embeddings(self, video_path: str, frame_skip: int = 2):
+    def extract_frame_embeddings(
+        self, video_path: str, frame_skip: int = 2
+    ) -> tuple[np.ndarray, list[int]]:
         cap = cv2.VideoCapture(video_path)
         embeddings = []
         frame_indices = []
@@ -37,9 +38,9 @@ class VideoHandler:
 
     def present_query_results(
         self,
-        results: List[Tuple[str, int, float]],
+        results: list[tuple[str, int, float]],
         duration: int = 5,
-    ):
+    ) -> None:
         for video_path, frame_idx, score in results:
             cap = cv2.VideoCapture(video_path)
             fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -66,7 +67,7 @@ class VideoHandler:
         fps: int,
         duration: int = 5,
         output_dir: str = "./segments",
-    ):
+    ) -> str:
         start_frame = max(0, frame_idx - int(fps * duration // 2))
         end_frame = frame_idx + int(fps * duration // 2)
 
@@ -80,7 +81,7 @@ class VideoHandler:
             f"segment_{os.path.basename(video_path).split('.')[0]}_{frame_idx}.mp4",
         )
 
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fourcc = cv2.VideoWriter.fourcc(*"mp4v")
         frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))

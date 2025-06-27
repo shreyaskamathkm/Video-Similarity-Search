@@ -6,7 +6,7 @@ from video_similarity_search.backend.search import VideoSearch
 from video_similarity_search.backend.video_handler import VideoHandler
 
 
-def main():
+def main() -> None:
     model = Model()
     video_handler = VideoHandler(model)
     milvus_handler = MilvusHandler()
