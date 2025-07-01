@@ -20,7 +20,7 @@ VIDEO_SUFFIXES = ["mp4", "mov"]
 
 
 # Base class for database operations
-class Database:
+class DatabaseHandler:
     """A base class for database operations."""
 
     def __init__(self, collection_name: str, reset_dataset: bool, embedding_size: int) -> None:
@@ -63,7 +63,7 @@ class Database:
         raise NotImplementedError("This should be implemented in the subclass")
 
 
-class MilvusHandler(Database):
+class MilvusHandler(DatabaseHandler):
     """A class for handling Milvus database operations."""
 
     def __init__(self, collection_name: str, reset_dataset: bool, embedding_size: int) -> None:
@@ -114,7 +114,7 @@ class MilvusHandler(Database):
                     name="id", dtype=DataType.INT64, is_primary=True, auto_id=True
                 ),  # Auto-generated unique ID
                 FieldSchema(
-                    name="path",
+                    name="video_name",
                     dtype=DataType.VARCHAR,
                     max_length=255,
                     is_primary=False,
@@ -128,11 +128,10 @@ class MilvusHandler(Database):
                     is_primary=False,
                 ),
             ]
-            schema = CollectionSchema(fields=fields, description="Embedding Space")
+            schema = CollectionSchema(fields=fields, description="Video frame embeddings")
 
             # Create the collection
             self.client.create_collection(collection_name=self.collection_name, schema=schema)
-            logger.info(f"Collection '{self.collection_name}' created.")
             logger.info(f"Collection '{self.collection_name}' created.")
 
     def _create_index(self) -> None:
@@ -149,7 +148,6 @@ class MilvusHandler(Database):
         )
 
         self.client.create_index(collection_name=self.collection_name, index_params=index_params)
-        logger.info(f"Index created for '{self.collection_name}'.")
         logger.info(f"Index created for '{self.collection_name}'.")
 
     def save_embeddings(
@@ -171,25 +169,24 @@ class MilvusHandler(Database):
                 f"Embeddings should have {self.embedding_size} dimensions, \
                 but got {embeddings.shape[1]}"
             )
-        if not isinstance(path, str):
-            path = str(path)
-        if not all(isinstance(idx, int) for idx in embeddings.frame_indices):
+        if not isinstance(video_path, str):
+            video_path = str(video_path)
+        if not all(isinstance(idx, int) for idx in frame_indices):
             raise ValueError("frame_indices should be a list of integers")
 
         # Prepare data for insertion
         data = [
             {
-                "path": path,
+                "video_name": video_path,
                 "frame_idx": frame_idx,
                 "embedding": embedding.tolist(),
             }
-            for frame_idx, embedding in zip(embeddings.frame_indices, embeddings.embeddings)
+            for frame_idx, embedding in zip(frame_indices, embeddings)
         ]
 
         try:
             # collection = Collection(name=self.collection_name)
             self.client.insert(collection_name=self.collection_name, data=data)
-            logger.info(f"Inserted {len(data)} records into '{self.collection_name}'.")
             logger.info(f"Inserted {len(data)} records into '{self.collection_name}'.")
         except Exception as e:
             logger.error(f"Error saving embeddings: {e}")
@@ -215,7 +212,6 @@ class MilvusHandler(Database):
             # Ensure the collection is loaded
             self.client.load_collection(self.collection_name)
             logger.info(f"Collection '{self.collection_name}' loaded into memory.")
-            logger.info(f"Collection '{self.collection_name}' loaded into memory.")
 
             # Perform the search
             return self.client.search(
@@ -224,7 +220,7 @@ class MilvusHandler(Database):
                 anns_field="embedding",
                 search_params=self.search_params,
                 limit=top_k,
-                output_fields=["path", "frame_idx"],
+                output_fields=["video_name", "frame_idx"],
             )
         except Exception as e:
             logger.error(f"Error during search: {e}")

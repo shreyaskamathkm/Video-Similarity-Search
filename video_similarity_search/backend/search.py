@@ -1,7 +1,9 @@
+import logging
+
 import numpy as np
 from PIL import Image
 
-from video_similarity_search.backend.database_handler import MilvusHandler
+from video_similarity_search.backend.database_handler import DatabaseHandler
 from video_similarity_search.backend.model import VLMBaseModel
 
 logger = logging.getLogger(__name__)
@@ -10,15 +12,15 @@ logger = logging.getLogger(__name__)
 class VideoSearch:
     """A class for performing video search."""
 
-    def __init__(self, model: VLMBaseModel, milvus_handler: MilvusHandler):
+    def __init__(self, model: VLMBaseModel, database_handler: DatabaseHandler):
         """Initializes the VideoSearch object.
 
         Args:
             model: The VLMBaseModel to use for extracting features.
-            milvus_handler: The MilvusHandler to use for searching.
+            database_handler: The DatabaseHandler to use for searching.
         """
         self.model = model
-        self.database = database
+        self.database_handler = database_handler
 
     def _search(self, query_embedding: np.ndarray, top_k: int = 5) -> list[tuple[str, int, float]]:
         """Performs a search using a query embedding.
@@ -31,7 +33,7 @@ class VideoSearch:
             A list of tuples, where each tuple contains the video name, frame index,
             and distance.
         """
-        results = self.milvus_handler.search(query_embedding=query_embedding, top_k=top_k)
+        results = self.database_handler.search(query_embedding=query_embedding, top_k=top_k)
         matches: list[tuple[str, int, float]] = []
         for hit in results[0]:
             video_name = hit["entity"].get("video_name")
@@ -76,5 +78,4 @@ class VideoSearch:
             and distance.
         """
         query_embedding = self.model.extract_image_features(image).flatten()
-        return self._search(query_embedding=query_embedding, top_k=top_k)
         return self._search(query_embedding=query_embedding, top_k=top_k)

@@ -22,6 +22,8 @@ torchvision = [
 ]
 cloudpathlib = "^0.21.1"
 pyyaml = "^6.0.1"
+rich = "13.9.4"
+
 
 [[tool.poetry.source]]
 name = "torchcpu"

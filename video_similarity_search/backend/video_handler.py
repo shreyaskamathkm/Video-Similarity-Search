@@ -57,6 +57,4 @@ class VideoHandler:
             duration: The duration of the video segment to extract.
             min_time_distance: The minimum time distance between consecutive segments.
         """
-        self.query_result_formatter.present_query_results(
-            results, duration, min_time_distance
-        )
+        self.query_result_formatter.present_query_results(results, duration, min_time_distance)
