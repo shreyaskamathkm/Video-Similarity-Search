@@ -1,143 +1,113 @@
-# Video Similarity Search System
+# Video Similarity Search
 
-This repository provides a Python-based implementation for a Video Similarity Search System using CLIP, OpenCV, and Milvus. The system allows you to index video frame embeddings into a Milvus database and perform similarity searches using text or image queries.
-
-______________________________________________________________________
+This repository provides a Python-based implementation for a Video Similarity Search System using Open-CLIP, OpenCV, and Milvus. The system allows you to index video frame embeddings into a Milvus database and perform similarity searches using text queries.
 
 ## Table of Contents
 
-- [Video Similarity Search System](#video-similarity-search-system)
+- [Video Similarity Search](#video-similarity-search)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Requirements](#requirements)
-    - [Python Dependencies](#python-dependencies)
   - [Installation](#installation)
   - [Usage](#usage)
-    - [Adding Videos to the Database](#adding-videos-to-the-database)
-    - [Text-based Search](#text-based-search)
-    - [Image-based Search](#image-based-search)
-    - [Managing the Database](#managing-the-database)
   - [File Structure](#file-structure)
   - [Acknowledgements](#acknowledgements)
 
-______________________________________________________________________
-
 ## Features
 
-- **Video Embedding Extraction**: Uses OpenAI's CLIP model to extract embeddings from video frames.
+- **Video Embedding Extraction**: Uses `open_clip_torch` to extract embeddings from video frames.
 - **Efficient Frame Sampling**: Allows skipping frames to optimize processing.
 - **Vector Database Integration**: Leverages Milvus for efficient storage and similarity search of embeddings.
-- **Search Modes**:
-  - Text-based search
-  - Image-based search
-- **Video Management**: Add videos to the database, search, query, and delete videos from the collection.
-
-______________________________________________________________________
+- **Text-based Search**: Perform similarity search using text queries.
+- **Video Management**: Add videos to the database, search, and query.
 
 ## Requirements
 
-- Python 3.8+
-- [Milvus 2.0](https://milvus.io/)
-
-### Python Dependencies
-
-- `opencv-python`
-- `numpy`
-- `transformers`
-- `pillow`
-- `pymilvus`
-
-______________________________________________________________________
+- Python 3.10+
+- [Milvus](https://milvus.io/)
+- [Poetry](https://python-poetry.org/)
 
 ## Installation
 
-1. Clone the repository:
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository_url>
+    cd video_similarity_search
+    ```
 
-   ```bash
-   git clone <repository_url>
-   cd <repository_name>
-   ```
+2.  **Install dependencies using Poetry:**
+    ```bash
+    poetry install
+    ```
 
-1. Install dependencies using Poetry:
-
-   ```bash
-   poetry install
-   ```
-
-1. Set up Milvus:
-
-   - Ensure Milvus is running locally or remotely.
-   - Update the connection URI in the `MilvusHandler` class (default is `http://localhost:19530`).
-
-______________________________________________________________________
+3.  **Set up Milvus:** Ensure Milvus is running. If not, run the following:
+      ```bash
+      bash standalone_embed.sh start
+      ```
 
 ## Usage
 
-### Adding Videos to the Database
+The application is run via a command-line interface (CLI). The main command is `run_video_similarity`, which requires a configuration file.
 
-To add videos from a folder to the database:
+1.  **Create a configuration file.** A sample configuration is provided in `config/video_search_similarity.yaml`. You can modify this file or create your own.
 
-```bash
-python main.py
-```
+    ```yaml
+    collection_name: "video_search"
+    video_folder: "videos"
+    query: "a man talking"
+    frame_skip: 100
+    reset_dataset: True
+    model_name: "ViT-B-32-SigLIP2-256"
+    model_architecture: "ViT-B-32-SigLIP2"
+    model_pretrained: "webli"
+    ```
+    **Note:** It is recommended to set `reset_dataset: True` to ensure that the Milvus database is cleared before new videos are added. This prevents discrepancies and ensures a clean state for each run.
 
-Modify the `video_folder` variable in the `__main__` function to specify the path to your video directory.
+2.  **Run the application:**
+    ```bash
+    poetry run python -m video_similarity_search.cli run_video_similarity --config-path config/video_search_similarity.yaml
+    ```
 
-### Text-based Search
-
-Perform a search using a text query:
-
-```python
-query = "A person stealing a bag"
-results = video_search.search_by_text(query)
-logging.info("Search results:", results)
-```
-
-### Image-based Search
-
-Perform a search using an image query:
-
-```python
-from PIL import Image
-image = Image.open("query_image.jpg")
-results = video_search.search_by_image(image)
-logging.info("Search results:", results)
-```
-
-### Managing the Database
-
-- Query videos:
-  ```python
-  milvus_handler.query(expr="id >= 0")
-  ```
-- Delete a specific video:
-  ```python
-  milvus_handler.delete_video("video_name.mp4")
-  ```
-- Drop the entire collection:
-  ```python
-  milvus_handler.delete_collection()
-  ```
-
-______________________________________________________________________
+    This will:
+    - Connect to the Milvus database.
+    - Process the videos in the specified `video_folder`.
+    - Embed the video frames using the specified CLIP model.
+    - Store the embeddings in the Milvus collection.
+    - Perform a similarity search with the provided `query`.
+    - Display the search results.
 
 ## File Structure
 
-- `main.py`: Main script to add videos and perform searches.
-- `handlers/`:
-  - `model.py`: CLIP model operations.
-  - `video_handler.py`: Handles video processing and frame embedding extraction.
-  - `milvus_handler.py`: Handles Milvus operations including saving and searching embeddings.
-  - `search.py`: Search operations for text and image queries.
+```
+.
+├── config
+│   └── video_search_similarity.yaml
+├── video_similarity_search
+│   ├── backend
+│   │   ├── database_handler.py
+│   │   ├── embeddingextractor.py
+│   │   ├── model.py
+│   │   ├── query_result_formatter.py
+│   │   ├── search.py
+│   │   ├── video_handler.py
+│   │   ├── video_processor.py
+│   │   └── video_segment_extractor.py
+│   ├── cli.py
+│   └── schema.py
+├── videos
+└── ...
+```
 
-______________________________________________________________________
+- **`config/`**: Contains configuration files for the application.
+- **`video_similarity_search/`**: Main application source code.
+  - **`backend/`**: Core logic for video processing, database handling, and search.
+  - **`cli.py`**: Command-line interface for the application.
+  - **`schema.py`**: Pydantic models for application configuration.
+- **`videos/`**: Default directory for storing input videos.
 
 ## Acknowledgements
 
 - [OpenAI CLIP](https://github.com/openai/CLIP)
 - [Milvus](https://milvus.io/)
 - [OpenCV](https://opencv.org/)
-
-Siglip2 models available
-(model_name, pretrained dataset)
-('ViT-B-32-SigLIP2-256', 'webli'), ('ViT-B-16-SigLIP2', 'webli'), ('ViT-B-16-SigLIP2-256', 'webli'), ('ViT-B-16-SigLIP2-384', 'webli'), ('ViT-B-16-SigLIP2-512', 'webli'), ('ViT-L-16-SigLIP2-256', 'webli'), ('ViT-L-16-SigLIP2-384', 'webli'), ('ViT-L-16-SigLIP2-512', 'webli'), ('ViT-SO400M-14-SigLIP2', 'webli'), ('ViT-SO400M-14-SigLIP2-378', 'webli'), ('ViT-SO400M-16-SigLIP2-256', 'webli'), ('ViT-SO400M-16-SigLIP2-384', 'webli'), ('ViT-SO400M-16-SigLIP2-512', 'webli'), ('ViT-gopt-16-SigLIP2-256', 'webli'), ('ViT-gopt-16-SigLIP2-384', 'webli'),
+- [open_clip_torch](https://github.com/mlfoundations/open_clip)
