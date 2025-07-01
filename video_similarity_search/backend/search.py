@@ -4,7 +4,7 @@ from PIL import Image
 from video_similarity_search.backend.database_handler import MilvusHandler
 from video_similarity_search.backend.model import VLMBaseModel
 
-# Class for Search operations
+logger = logging.getLogger(__name__)
 
 
 class VideoSearch:
@@ -18,7 +18,7 @@ class VideoSearch:
             milvus_handler: The MilvusHandler to use for searching.
         """
         self.model = model
-        self.milvus_handler = milvus_handler
+        self.database = database
 
     def _search(self, query_embedding: np.ndarray, top_k: int = 5) -> list[tuple[str, int, float]]:
         """Performs a search using a query embedding.
@@ -76,4 +76,5 @@ class VideoSearch:
             and distance.
         """
         query_embedding = self.model.extract_image_features(image).flatten()
+        return self._search(query_embedding=query_embedding, top_k=top_k)
         return self._search(query_embedding=query_embedding, top_k=top_k)

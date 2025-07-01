@@ -1,4 +1,5 @@
 import logging
+import logging
 from pathlib import Path
 
 import click
@@ -76,4 +77,5 @@ def run_video_similarity(config_path: Path | S3Path) -> None:
 
 
 if __name__ == "__main__":
+    cli()
     cli()
