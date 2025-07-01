@@ -2,51 +2,77 @@ import logging
 from pathlib import Path
 
 import click
+from cloudpathlib import AnyPath, S3Path
 
-from video_similarity_search.backend.database_handler import MilvusDatabase, VideoToDatabase
-from video_similarity_search.backend.embeddingextractor import VideoEmbeddingExtractor
-from video_similarity_search.backend.model import CLIPModelProcessor
-from video_similarity_search.backend.search import Search
+from video_similarity_search.backend.database_handler import MilvusHandler, VideoDatabase
+from video_similarity_search.backend.model import model_factory
+from video_similarity_search.backend.query_result_formatter import QueryResultFormatter
+from video_similarity_search.backend.search import VideoSearch
+from video_similarity_search.backend.video_handler import VideoHandler
+from video_similarity_search.backend.video_processor import VideoProcessor
+from video_similarity_search.backend.video_segment_extractor import VideoSegmentExtractor
+from video_similarity_search.schema import AppConfig
 
 logger = logging.getLogger(__name__)
 
 
 @click.group()
-def cli():
+def cli() -> None:
+    """A command-line interface for video similarity search."""
     pass
 
 
-@click.command("video_similarity_search")
+@cli.command("run_video_similarity")
 @click.option(
-    "--video-folder",
-    type=Path,
-    required=True,
-    help="Path to the folder containing videos.",
+    "--config-path",
+    type=AnyPath,
+    help="Path to the config file.",
 )
-@click.option("--query", type=str, default="Person", help="Text query for searching videos.")
-@click.option(
-    "--remove_old_data", is_flag=True, help="Delete all the existing images in the database."
-)
-def video_similarity_search(video_folder: Path, query: str, remove_old_data: bool):
-    if not video_folder.exists():
-        logger.error(f"Folder {video_folder} does not exist.")
-        raise ValueError(f"Folder {video_folder} does not exist.")
+def run_video_similarity(config_path: Path | S3Path) -> None:
+    """Runs the video similarity search.
 
-    # Only CLIP model is supported right now
-    # Initializing the model, video handler, milvus handler, video database and search
-    model = CLIPModelProcessor()
-    video_handler = VideoEmbeddingExtractor(model)
-    milvus_handler = MilvusDatabase(remove_old_data=remove_old_data)
-    video_database = VideoToDatabase(video_handler, milvus_handler)
-    video_search = Search(model, milvus_handler)
+    Args:
+        config_path: The path to the config file.
+    """
+    # Load configuration
+    app_config = AppConfig.from_yaml(config_path)
 
-    video_database.add_files_from_folder(video_folder)
-    results = video_search.search_by_text(query)
+    # Initialize core model
+    model = model_factory(
+        app_config.model_name, app_config.model_architecture, app_config.model_pretrained
+    )
+
+    # Initializes and wires up video processing components
+    video_processor = VideoProcessor(model)
+    video_segment_extractor = VideoSegmentExtractor()
+    query_result_formatter = QueryResultFormatter(video_segment_extractor)
+    video_handler = VideoHandler(video_processor, video_segment_extractor, query_result_formatter)
+
+    # Initializes and wires up database components
+    milvus_handler = MilvusHandler(
+        collection_name=app_config.collection_name,
+        reset_dataset=app_config.reset_dataset,
+        embedding_size=model.get_embedding_length(),
+    )
+    video_database = VideoDatabase(
+        model, video_handler, milvus_handler, frame_skip=app_config.frame_skip
+    )
+
+    # Populate the database with video embeddings
+    logger.info(f"Populating database from folder: {app_config.video_folder}")
+    video_database.add_videos_from_folder(Path(str(app_config.video_folder)))
+
+    # Log information about the database content
+    milvus_handler.get_all_videos_and_frame_indices()
+
+    # Perform the search
+    logger.info(f"Performing search for query: '{app_config.query}'")
+    video_search = VideoSearch(model, milvus_handler)
+    results = video_search.search_by_text(app_config.query)
+
+    # Present the results
+    logger.info("Displaying search results...")
     video_handler.present_query_results(results)
-    logger.info(f"Search results: {results}")
-
-
-cli.add_command(video_similarity_search)
 
 
 if __name__ == "__main__":

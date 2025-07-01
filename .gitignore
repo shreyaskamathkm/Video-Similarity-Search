@@ -28,6 +28,7 @@ var/
 
 # Folders
 videos/
+segments/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -79,4 +80,4 @@ target/
 *.insyncdl
 .venv
 volumes/
-segments/
+.*_cache

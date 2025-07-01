@@ -7,20 +7,22 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+pydantic = "^2.11.7"
 numpy = "^1.26.4"
 opencv-python = "^4.9.0.80"
 pymilvus = "^2.5.0"
-transformers= "^4.47.0"
-rich ="13.9.4"
-click = "^8.1.8"
+open_clip_torch = "^2.32.0 "
 torch = [
-    {version = "^2.5.1", source="pypi", markers = "sys_platform == 'darwin'"},
-    {version = "^2.5.1", source = "torchgpu", markers = "sys_platform == 'linux'"}
+    { version = "^2.5.1", source = "pypi", markers = "sys_platform == 'darwin'" },
+    { version = "^2.5.1", source = "torchgpu", markers = "sys_platform == 'linux'" },
 ]
 torchvision = [
-    {version = "^0.20", source="pypi", markers = "sys_platform == 'darwin'"},
-    {version = "^0.20", source = "torchgpu", markers = "sys_platform == 'linux'"}
+    { version = "^0.20", source = "pypi", markers = "sys_platform == 'darwin'" },
+    { version = "^0.20", source = "torchgpu", markers = "sys_platform == 'linux'" },
 ]
+cloudpathlib = "^0.21.1"
+pyyaml = "^6.0.1"
+rich = "13.9.4"
 
 
 [[tool.poetry.source]]
@@ -33,18 +35,53 @@ name = "torchgpu"
 url = "https://download.pytorch.org/whl/cu121"
 priority = "explicit"
 
-
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.0.1"
 ruff = "^0.8.3"
 mypy = "^1.13.0"
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",      # see: https://pypi.org/project/pycodestyle
+    "F",      # see: https://pypi.org/project/pyflakes
+    "S",      # see: https://pypi.org/project/flake8-bandit
+    "RUF018", # see: https://docs.astral.sh/ruff/rules/assignment-in-assert
+    "UP",     # see: https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+extend-select = [
+    "I",      # see: isort
+    "C4",     # see: https://pypi.org/project/flake8-comprehensions
+    "SIM",    # see: https://pypi.org/project/flake8-simplify
+    "RET",    # see: https://pypi.org/project/flake8-return
+    "PT",     # see: https://pypi.org/project/flake8-pytest-style
+    "RUF100", # see: https://docs.astral.sh/ruff/rules/unused-noqa/
+]
+ignore = [
+    "E731", # Do not assign a lambda expression, use a def
+    "S108",
+    "E203", # conflicts with black
+]
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
-ignore_missing_imports = true
 
-[tool.poetry.scripts]
-vss = "video_similarity_search.cli:video_similarity_search"
+install_types = true
+non_interactive = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+allow_redefinition = true
+# disable this rule as the Trainer attributes are defined in the connectors, not in its __init__
+disable_error_code = "attr-defined"
+# style choices
+warn_no_return = false

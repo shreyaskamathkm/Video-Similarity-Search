@@ -1,20 +1,17 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  // Use the default Python file for launching
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Video Similarity Search",
+      "name": "Run Video Similarity CLI",
       "type": "debugpy",
       "request": "launch",
-      "module": "video_similarity_search.cli",
+      "program": "${workspaceFolder}/video_similarity_search/cli.py",
       "console": "integratedTerminal",
       "args": [
-        "video_similarity_search",
-        "--video-folder",
-        "./videos",
-        "--remove_old_data"
+        "run_video_similarity",
+        "--config-path",
+        "config/video_search_similarity.yaml"
       ]
     }
   ]
