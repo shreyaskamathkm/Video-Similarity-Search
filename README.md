@@ -10,6 +10,9 @@ This repository provides a Python-based implementation for a Video Similarity Se
   - [Requirements](#requirements)
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Development Status](#development-status)
+    - [Completed](#completed)
+    - [Future Work (TODO)](#future-work-todo)
   - [File Structure](#file-structure)
   - [Acknowledgements](#acknowledgements)
 
@@ -75,6 +78,21 @@ The application is run via a command-line interface (CLI). The main command is `
     - Store the embeddings in the Milvus collection.
     - Perform a similarity search with the provided `query`.
     - Display the search results.
+
+## Development Status
+
+### Completed
+
+- [x] Text-based similarity search
+- [x] Video processing and frame extraction
+- [x] Milvus database integration
+- [x] CLI for running the application
+
+### Future Work (TODO)
+
+- [ ] Implement image-based similarity search
+- [ ] Add comprehensive unit and integration tests
+- [ ] Add videos in existing Milvus database
 
 ## File Structure
 
