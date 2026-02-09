@@ -10,7 +10,7 @@ typecheck:
 	mypy ./video_similarity_search
 
 edit-install:
-	pip install -e .
+	pip install -e .[dev]
 
 install:
 	pip install .

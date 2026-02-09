@@ -38,9 +38,15 @@ This repository provides a Python-based implementation for a Video Similarity Se
     cd video_similarity_search
     ```
 
-2.  **Install dependencies using Poetry:**
+2.  **Create and activate a virtual environment:**
     ```bash
-    poetry install
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
+
+3.  **Install dependencies using pip:**
+    ```bash
+    pip install .
     ```
 
 3.  **Set up Milvus:** Ensure Milvus is running. If not, run the following:
@@ -68,7 +74,7 @@ The application is run via a command-line interface (CLI). The main command is `
 
 2.  **Run the application:**
     ```bash
-    poetry run python -m video_similarity_search.cli run_video_similarity --config-path config/video_search_similarity.yaml
+    python -m video_similarity_search.cli run_video_similarity --config-path config/video_search_similarity.yaml
     ```
 
     This will:
