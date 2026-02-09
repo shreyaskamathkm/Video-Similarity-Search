@@ -53,6 +53,8 @@ def run_video_similarity(config_path: Path | S3Path) -> None:
         collection_name=app_config.collection_name,
         reset_dataset=app_config.reset_dataset,
         embedding_size=model.get_embedding_length(),
+        uri=app_config.milvus_uri,
+        token=app_config.milvus_token,
     )
     video_database = VideoDatabase(
         model, video_handler, milvus_handler, frame_skip=app_config.frame_skip
