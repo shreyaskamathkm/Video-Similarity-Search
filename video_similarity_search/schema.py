@@ -31,7 +31,7 @@ class AppConfig(BaseModel):
         default="root:Milvus", description="Token for Milvus authentication."
     )
     batch_size: int = Field(
-        default=32, description="Batch size for video frame processing."
+        default=2, description="Batch size for video frame processing."
     )
 
     @staticmethod
