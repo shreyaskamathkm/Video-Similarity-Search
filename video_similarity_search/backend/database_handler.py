@@ -322,6 +322,7 @@ class VideoDatabase:
         video_handler: VideoHandler,
         database_handler: MilvusHandler,
         frame_skip: int,
+        batch_size: int = 32,
     ):
         """Initializes the VideoDatabase object.
         Args:
@@ -329,9 +330,11 @@ class VideoDatabase:
             video_handler: The VideoHandler to use for processing videos.
             database_handler: The MilvusHandler to use for database operations.
             frame_skip: The number of frames to skip between embeddings.
+            batch_size: The batch size for video processing.
         """
         self.model = model
         self.frame_skip = frame_skip
+        self.batch_size = batch_size
         self.video_handler = video_handler
         self.database_handler = database_handler
 
@@ -341,7 +344,7 @@ class VideoDatabase:
             video_path: The path to the video.
         """
         embeddings, frame_indices = self.video_handler.extract_frame_embeddings(
-            str(video_path), self.frame_skip
+            str(video_path), self.frame_skip, self.batch_size
         )
 
         self.database_handler.save_embeddings(str(video_path), embeddings, frame_indices)

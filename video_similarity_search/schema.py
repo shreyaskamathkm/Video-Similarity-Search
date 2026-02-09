@@ -30,6 +30,9 @@ class AppConfig(BaseModel):
     milvus_token: str = Field(
         default="root:Milvus", description="Token for Milvus authentication."
     )
+    batch_size: int = Field(
+        default=32, description="Batch size for video frame processing."
+    )
 
     @staticmethod
     def _read_yaml(config_path: S3Path | Path) -> dict:

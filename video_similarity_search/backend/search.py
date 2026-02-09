@@ -63,7 +63,7 @@ class VideoSearch:
             A list of tuples, where each tuple contains the video name, frame index,
             and distance.
         """
-        query_embedding = self.model.extract_text_features(query).flatten()
+        query_embedding = self.model.extract_text_features([query]).flatten()
         return self._search(query_embedding=query_embedding, top_k=top_k)
 
     def search_by_image(self, image: Image.Image, top_k: int = 5) -> list[tuple[str, int, float]]:
@@ -77,5 +77,5 @@ class VideoSearch:
             A list of tuples, where each tuple contains the video name, frame index,
             and distance.
         """
-        query_embedding = self.model.extract_image_features(image).flatten()
+        query_embedding = self.model.extract_image_features([image]).flatten()
         return self._search(query_embedding=query_embedding, top_k=top_k)

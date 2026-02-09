@@ -57,7 +57,11 @@ def run_video_similarity(config_path: Path | S3Path) -> None:
         token=app_config.milvus_token,
     )
     video_database = VideoDatabase(
-        model, video_handler, milvus_handler, frame_skip=app_config.frame_skip
+        model,
+        video_handler,
+        milvus_handler,
+        frame_skip=app_config.frame_skip,
+        batch_size=app_config.batch_size,
     )
 
     # Populate the database with video embeddings
