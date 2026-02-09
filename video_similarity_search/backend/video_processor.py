@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -31,14 +33,20 @@ class VideoProcessor:
                 - A numpy array of frame embeddings.
                 - A list of frame indices corresponding to the embeddings.
         """
-        cap = cv2.VideoCapture(video_path)
+        if not Path(video_path).exists():
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+             raise RuntimeError(f"Failed to open video file: {video_path}")
+
         embeddings: list[np.ndarray] = []
         frame_indices: list[int] = []
         batch_frames: list[Image.Image] = []
         batch_indices: list[int] = []
         frame_idx = 0
 
-        while cap.isOpened():
+        while True:
             ret, frame = cap.read()
             if not ret:
                 break

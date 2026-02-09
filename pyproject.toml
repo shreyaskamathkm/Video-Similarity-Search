@@ -78,3 +78,9 @@ allow_redefinition = true
 disable_error_code = "attr-defined"
 # style choices
 warn_no_return = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v"
+

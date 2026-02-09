@@ -9,7 +9,8 @@ def test_extract_frame_embeddings_batching(mock_model):
     processor = VideoProcessor(mock_model)
     
     # Mock cv2 and video capture
-    with patch("cv2.VideoCapture") as mock_cap_cls:
+    with patch("cv2.VideoCapture") as mock_cap_cls, \
+         patch("pathlib.Path.exists", return_value=True):
         mock_cap = mock_cap_cls.return_value
         mock_cap.isOpened.side_effect = [True, True, True, True, True, False] # 5 frames, loop until False
         
@@ -35,9 +36,11 @@ def test_extract_frame_embeddings_empty_video(mock_model):
     """Test that VideoProcessor handles empty videos correctly."""
     processor = VideoProcessor(mock_model)
     
-    with patch("cv2.VideoCapture") as mock_cap_cls:
+    with patch("cv2.VideoCapture") as mock_cap_cls, \
+         patch("pathlib.Path.exists", return_value=True):
         mock_cap = mock_cap_cls.return_value
-        mock_cap.isOpened.return_value = False
+        mock_cap.isOpened.return_value = True
+        mock_cap.read.return_value = (False, None)
         
         embeddings, indices = processor.extract_frame_embeddings("dummy.mp4")
         
