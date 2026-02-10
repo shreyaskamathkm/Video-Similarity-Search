@@ -18,22 +18,22 @@ class VLMBaseModel:
         self.model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def extract_text_features(self, text: str) -> np.ndarray:
+    def extract_text_features(self, text: list[str]) -> np.ndarray:
         """Extracts features from text.
 
         Args:
-            text: The input text.
+            text: A list of input text strings.
 
         Raises:
             NotImplementedError: This method should be implemented in the subclass.
         """
         raise NotImplementedError("This should be implemented in the subclass")
 
-    def extract_image_features(self, image: Image.Image) -> np.ndarray:
-        """Extracts features from an image.
+    def extract_image_features(self, images: list[Image.Image]) -> np.ndarray:
+        """Extracts features from images.
 
         Args:
-            image: The input image.
+            images: A list of input images.
 
         Raises:
             NotImplementedError: This method should be implemented in the subclass.
@@ -66,31 +66,31 @@ class ClipModel(VLMBaseModel):
         self.tokenizer = open_clip.get_tokenizer(model_architecture)
         self._embedding_length = self.model.text_projection.shape[1]
 
-    def extract_text_features(self, text: str) -> np.ndarray:
+    def extract_text_features(self, text: list[str]) -> np.ndarray:
         """Extracts features from text using the CLIP model.
 
         Args:
-            text: The input text.
+            text: A list of input text strings.
 
         Returns:
             A numpy array of text features.
         """
-        tokens = self.tokenizer([text])
+        tokens = self.tokenizer(text)
         tokens = tokens.to(self.device)
         with torch.no_grad():
             features = self.model.encode_text(tokens)
         return features.cpu().numpy()
 
-    def extract_image_features(self, image: Image.Image) -> np.ndarray:
-        """Extracts features from an image using the CLIP model.
+    def extract_image_features(self, images: list[Image.Image]) -> np.ndarray:
+        """Extracts features from images using the CLIP model.
 
         Args:
-            image: The input image.
+            images: A list of input images.
 
         Returns:
             A numpy array of image features.
         """
-        image_input = self.preprocess(image).unsqueeze(0).to(self.device)
+        image_input = torch.stack([self.preprocess(image) for image in images]).to(self.device)
         with torch.no_grad():
             features = self.model.encode_image(image_input)
         return features.cpu().numpy()
@@ -122,31 +122,31 @@ class Siglip2Model(VLMBaseModel):
         self.tokenizer = open_clip.get_tokenizer(model_architecture)
         self._embedding_length = self.model.text_projection.shape[1]
 
-    def extract_text_features(self, text: str) -> np.ndarray:
+    def extract_text_features(self, text: list[str]) -> np.ndarray:
         """Extracts features from text using the Siglip2 model.
 
         Args:
-            text: The input text.
+            text: A list of input text strings.
 
         Returns:
             A numpy array of text features.
         """
-        tokens = self.tokenizer([text])
+        tokens = self.tokenizer(text)
         tokens = tokens.to(self.device)
         with torch.no_grad():
             features = self.model.encode_text(tokens)
         return features.cpu().numpy()
 
-    def extract_image_features(self, image: Image.Image) -> np.ndarray:
-        """Extracts features from an image using the Siglip2 model.
+    def extract_image_features(self, images: list[Image.Image]) -> np.ndarray:
+        """Extracts features from images using the Siglip2 model.
 
         Args:
-            image: The input image.
+            images: A list of input images.
 
         Returns:
             A numpy array of image features.
         """
-        image_input = self.preprocess(image).unsqueeze(0).to(self.device)
+        image_input = torch.stack([self.preprocess(image) for image in images]).to(self.device)
         with torch.no_grad():
             features = self.model.encode_image(image_input)
         return features.cpu().numpy()

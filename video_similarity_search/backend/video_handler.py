@@ -30,18 +30,19 @@ class VideoHandler:
         self.query_result_formatter = query_result_formatter
 
     def extract_frame_embeddings(
-        self, video_path: str, frame_skip: int = 2
+        self, video_path: str, frame_skip: int = 2, batch_size: int = 32
     ) -> tuple[np.ndarray, list[int]]:
         """Extracts frame embeddings from a video.
 
         Args:
             video_path: The path to the video.
             frame_skip: The number of frames to skip between embeddings.
+            batch_size: The number of frames to process at once.
 
         Returns:
             A tuple of (embeddings, frame_indices).
         """
-        return self.video_processor.extract_frame_embeddings(video_path, frame_skip)
+        return self.video_processor.extract_frame_embeddings(video_path, frame_skip, batch_size)
 
     def present_query_results(
         self,

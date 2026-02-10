@@ -24,6 +24,15 @@ class AppConfig(BaseModel):
     )
     model_architecture: str = Field(description="Architecture of the model.")
     model_pretrained: str = Field(description="Pretrained weights for the model.")
+    milvus_uri: str = Field(
+        default="http://localhost:19530", description="URI for the Milvus server."
+    )
+    milvus_token: str = Field(
+        default="root:Milvus", description="Token for Milvus authentication."
+    )
+    batch_size: int = Field(
+        default=2, description="Batch size for video frame processing."
+    )
 
     @staticmethod
     def _read_yaml(config_path: S3Path | Path) -> dict:

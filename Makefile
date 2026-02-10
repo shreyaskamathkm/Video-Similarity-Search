@@ -1,16 +1,19 @@
 
 .PHONY: all lint typecheck
 
-test-all: lint typecheck
+test-all: lint typecheck test
+
+test:
+	./.venv/bin/pytest
 
 lint:
-	ruff check ./video_similarity_search
+	./.venv/bin/ruff check ./video_similarity_search
 
 typecheck:
-	mypy ./video_similarity_search
+	./.venv/bin/mypy ./video_similarity_search
 
 edit-install:
-	pip install -e .
+	pip install -e .[dev]
 
 install:
 	pip install .

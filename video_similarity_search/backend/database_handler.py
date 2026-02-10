@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 from typing import Any
 
@@ -66,12 +65,21 @@ class DatabaseHandler:
 class MilvusHandler(DatabaseHandler):
     """A class for handling Milvus database operations."""
 
-    def __init__(self, collection_name: str, reset_dataset: bool, embedding_size: int) -> None:
+    def __init__(
+        self,
+        collection_name: str,
+        reset_dataset: bool,
+        embedding_size: int,
+        uri: str,
+        token: str,
+    ) -> None:
         """Initializes the MilvusHandler object.
         Args:
             collection_name: The name of the collection.
             reset_dataset: Whether to reset the dataset.
             embedding_size: The size of the embeddings.
+            uri: The URI of the Milvus server.
+            token: The token for Milvus authentication.
         """
         super().__init__(
             collection_name=collection_name,
@@ -81,9 +89,8 @@ class MilvusHandler(DatabaseHandler):
 
         self.search_params = {"nprobe": 128}
         try:
-            # Initialize the client directly using environment variable for token
-            milvus_token = os.environ.get("MILVUS_TOKEN", "root:Milvus")
-            self.client = MilvusClient(uri="http://localhost:19530", token=milvus_token)
+            # Initialize the client directly using passed parameters
+            self.client = MilvusClient(uri=uri, token=token)
             logger.info("Connected to Milvus.")
         except Exception as e:
             logger.error(f"Error connecting to Milvus: {e}")
@@ -315,6 +322,7 @@ class VideoDatabase:
         video_handler: VideoHandler,
         database_handler: MilvusHandler,
         frame_skip: int,
+        batch_size: int = 32,
     ):
         """Initializes the VideoDatabase object.
         Args:
@@ -322,9 +330,11 @@ class VideoDatabase:
             video_handler: The VideoHandler to use for processing videos.
             database_handler: The MilvusHandler to use for database operations.
             frame_skip: The number of frames to skip between embeddings.
+            batch_size: The batch size for video processing.
         """
         self.model = model
         self.frame_skip = frame_skip
+        self.batch_size = batch_size
         self.video_handler = video_handler
         self.database_handler = database_handler
 
@@ -334,7 +344,7 @@ class VideoDatabase:
             video_path: The path to the video.
         """
         embeddings, frame_indices = self.video_handler.extract_frame_embeddings(
-            str(video_path), self.frame_skip
+            str(video_path), self.frame_skip, self.batch_size
         )
 
         self.database_handler.save_embeddings(str(video_path), embeddings, frame_indices)
